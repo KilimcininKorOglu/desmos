@@ -19,11 +19,13 @@
 //! the read path ever becomes contended.
 
 pub mod link;
+pub mod reorder;
 pub mod strategy;
 
 pub use link::Link;
 pub use link::LinkId;
 pub use link::LinkTable;
+pub use reorder::ReorderBuffer;
 pub use strategy::BondingStrategy;
 pub use strategy::LinkSelection;
 pub use strategy::RoundRobin;
