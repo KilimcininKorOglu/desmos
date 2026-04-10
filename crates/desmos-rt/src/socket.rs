@@ -1,0 +1,172 @@
+//! Non-blocking UDP socket with optional per-interface egress binding.
+//!
+//! Wraps `socket2::Socket` so the rest of the runtime never has to reach
+//! for platform-specific setsockopts. `bind_on_interface` is Linux-only
+//! for now (via `SO_BINDTODEVICE`); macOS / BSD `IP_BOUND_IF` and
+//! Windows `SIO_SET_INTERFACE` land in Phase 6.
+
+use std::io;
+use std::net::SocketAddr;
+
+#[cfg(unix)]
+use std::os::fd::AsRawFd;
+#[cfg(unix)]
+use std::os::fd::RawFd;
+
+use socket2::Domain;
+use socket2::Protocol;
+use socket2::Socket as Sock2Socket;
+use socket2::Type;
+
+#[derive(Debug)]
+pub struct UdpSocket {
+    inner: std::net::UdpSocket,
+    bound_device: Option<String>,
+}
+
+impl UdpSocket {
+    /// Bind a non-blocking UDP socket to `addr`. Sets `SO_REUSEADDR` so
+    /// restarts do not have to wait for `TIME_WAIT` to expire.
+    pub fn bind(addr: SocketAddr) -> io::Result<Self> {
+        let sock = new_socket(addr)?;
+        sock.bind(&addr.into())?;
+        Ok(Self { inner: sock.into(), bound_device: None })
+    }
+
+    /// Bind a UDP socket and restrict its egress to `interface`
+    /// (Linux `SO_BINDTODEVICE`). The socket itself is bound to
+    /// `0.0.0.0:0` so the kernel picks an ephemeral port.
+    ///
+    /// Requires `CAP_NET_RAW` on interfaces other than `lo`.
+    #[cfg(target_os = "linux")]
+    pub fn bind_on_interface(interface: &str) -> io::Result<Self> {
+        let addr: SocketAddr = "0.0.0.0:0".parse().expect("valid literal");
+        let sock = new_socket(addr)?;
+        crate::linux::bind_device::bind_to_device(&sock, interface)?;
+        sock.bind(&addr.into())?;
+        Ok(Self { inner: sock.into(), bound_device: Some(interface.to_string()) })
+    }
+
+    /// Local address the kernel assigned to this socket.
+    pub fn local_addr(&self) -> io::Result<SocketAddr> {
+        self.inner.local_addr()
+    }
+
+    /// Interface name this socket was bound to (Linux only), or `None`.
+    pub fn bound_device(&self) -> Option<&str> {
+        self.bound_device.as_deref()
+    }
+
+    /// Non-blocking receive. Returns `WouldBlock` when no packet is ready.
+    pub fn recv_from(&self, buf: &mut [u8]) -> io::Result<(usize, SocketAddr)> {
+        self.inner.recv_from(buf)
+    }
+
+    /// Non-blocking send.
+    pub fn send_to(&self, buf: &[u8], addr: SocketAddr) -> io::Result<usize> {
+        self.inner.send_to(buf, addr)
+    }
+
+    /// Hand out a borrow of the underlying `std::net::UdpSocket` so tests
+    /// and the few call sites that already speak that API can avoid a
+    /// round-trip through the wrapper.
+    pub fn as_std(&self) -> &std::net::UdpSocket {
+        &self.inner
+    }
+}
+
+#[cfg(unix)]
+impl AsRawFd for UdpSocket {
+    fn as_raw_fd(&self) -> RawFd {
+        self.inner.as_raw_fd()
+    }
+}
+
+fn new_socket(addr: SocketAddr) -> io::Result<Sock2Socket> {
+    let domain = match addr {
+        SocketAddr::V4(_) => Domain::IPV4,
+        SocketAddr::V6(_) => Domain::IPV6,
+    };
+    let sock = Sock2Socket::new(domain, Type::DGRAM, Some(Protocol::UDP))?;
+    sock.set_nonblocking(true)?;
+    sock.set_reuse_address(true)?;
+    Ok(sock)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn wait_for_readable(sock: &std::net::UdpSocket, timeout_ms: u64) -> io::Result<()> {
+        use std::io::ErrorKind;
+        use std::time::Duration;
+        use std::time::Instant;
+        let deadline = Instant::now() + Duration::from_millis(timeout_ms);
+        let mut probe = [0u8; 1];
+        loop {
+            match sock.peek(&mut probe) {
+                Ok(_) => return Ok(()),
+                Err(e) if e.kind() == ErrorKind::WouldBlock => {
+                    if Instant::now() >= deadline {
+                        return Err(io::Error::new(ErrorKind::TimedOut, "not readable"));
+                    }
+                    std::thread::sleep(Duration::from_millis(5));
+                }
+                Err(e) => return Err(e),
+            }
+        }
+    }
+
+    #[test]
+    fn bind_loopback_assigns_ephemeral_port() {
+        let addr: SocketAddr = "127.0.0.1:0".parse().unwrap();
+        let s = UdpSocket::bind(addr).unwrap();
+        let local = s.local_addr().unwrap();
+        assert_eq!(local.ip(), addr.ip());
+        assert_ne!(local.port(), 0, "kernel should have picked a port");
+        assert!(s.bound_device().is_none());
+    }
+
+    #[test]
+    fn send_to_and_recv_from_round_trip_on_loopback() {
+        let a = UdpSocket::bind("127.0.0.1:0".parse().unwrap()).unwrap();
+        let b = UdpSocket::bind("127.0.0.1:0".parse().unwrap()).unwrap();
+        let b_addr = b.local_addr().unwrap();
+        let sent = a.send_to(b"ping", b_addr).unwrap();
+        assert_eq!(sent, 4);
+        wait_for_readable(b.as_std(), 500).expect("b should become readable");
+        let mut buf = [0u8; 16];
+        let (n, from) = b.recv_from(&mut buf).unwrap();
+        assert_eq!(n, 4);
+        assert_eq!(&buf[..n], b"ping");
+        assert_eq!(from, a.local_addr().unwrap());
+    }
+
+    #[test]
+    fn bind_defaults_to_non_blocking() {
+        let s = UdpSocket::bind("127.0.0.1:0".parse().unwrap()).unwrap();
+        let mut buf = [0u8; 16];
+        let err = s.recv_from(&mut buf).unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::WouldBlock);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn bind_on_lo_reports_device() {
+        // `lo` does not require CAP_NET_RAW, so this exercises the
+        // SO_BINDTODEVICE path in unprivileged CI.
+        let s = match UdpSocket::bind_on_interface("lo") {
+            Ok(s) => s,
+            Err(e) if e.kind() == io::ErrorKind::PermissionDenied => return,
+            Err(e) => panic!("unexpected error: {e}"),
+        };
+        assert_eq!(s.bound_device(), Some("lo"));
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn bind_on_empty_interface_errors() {
+        let err = UdpSocket::bind_on_interface("").unwrap_err();
+        assert_eq!(err.kind(), io::ErrorKind::InvalidInput);
+    }
+}

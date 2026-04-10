@@ -10,3 +10,4 @@ description = "Desmos hand-rolled async runtime: reactor, TUN, sockets, timer, r
 
 [dependencies]
 desmos-proto = { path = "../desmos-proto" }
+socket2 = { workspace = true, features = ["all"] }

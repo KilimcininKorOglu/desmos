@@ -2,6 +2,7 @@
 
 #![cfg(target_os = "linux")]
 
+pub mod bind_device;
 pub mod reactor;
 pub mod tun;
 
