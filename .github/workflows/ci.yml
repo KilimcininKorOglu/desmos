@@ -1,0 +1,116 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+  CARGO_NET_RETRY: "3"
+  RUST_BACKTRACE: "1"
+
+jobs:
+  fmt:
+    name: fmt
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo fmt --all --check
+
+  clippy:
+    name: clippy
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo clippy --workspace --all-targets -- -D warnings
+
+  test-native:
+    name: test (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            install: ""
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            install: "sudo apt-get update && sudo apt-get install -y musl-tools"
+          - os: macos-14
+            target: aarch64-apple-darwin
+            install: ""
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            install: ""
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+      - name: Add target
+        run: rustup target add ${{ matrix.target }}
+      - name: Install target deps
+        if: matrix.install != ''
+        shell: bash
+        run: ${{ matrix.install }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: Build
+        run: cargo build --workspace --target ${{ matrix.target }}
+      - name: Test
+        run: cargo test --workspace --target ${{ matrix.target }}
+
+  build-cross:
+    name: build (${{ matrix.target }})
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            runner: cross
+          - os: ubuntu-latest
+            target: x86_64-unknown-freebsd
+            runner: cross
+          - os: macos-14
+            target: x86_64-apple-darwin
+            runner: cargo
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install pinned toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+      - name: Add target (cargo runner)
+        if: matrix.runner == 'cargo'
+        run: rustup target add ${{ matrix.target }}
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+      - name: Install cross
+        if: matrix.runner == 'cross'
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross@0.2.5
+      - name: Build (cross)
+        if: matrix.runner == 'cross'
+        run: cross build --workspace --target ${{ matrix.target }}
+      - name: Build (cargo)
+        if: matrix.runner == 'cargo'
+        run: cargo build --workspace --target ${{ matrix.target }}
