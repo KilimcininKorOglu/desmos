@@ -7,6 +7,7 @@
 pub mod event;
 pub mod pool;
 pub mod ring;
+pub mod timer;
 
 #[cfg(unix)]
 pub mod reactor;
@@ -23,6 +24,9 @@ pub use pool::PoolStats;
 pub use ring::Consumer;
 pub use ring::Producer;
 pub use ring::SpscRing;
+pub use timer::FiredTimer;
+pub use timer::TimerId;
+pub use timer::TimerWheel;
 
 #[cfg(unix)]
 pub use reactor::RawSource;
