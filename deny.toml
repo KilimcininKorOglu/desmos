@@ -5,7 +5,17 @@ yanked = "deny"
 
 [licenses]
 unlicensed = "deny"
-allow = ["MIT", "Apache-2.0", "ISC", "CC0-1.0", "BSD-3-Clause", "OpenSSL"]
+allow = [
+    "MIT",
+    "Apache-2.0",
+    "ISC",
+    "CC0-1.0",
+    "BSD-2-Clause",
+    "BSD-3-Clause",
+    "OpenSSL",
+    "Unicode-DFS-2016",
+    "Unicode-3.0",
+]
 
 [bans]
 multiple-versions = "deny"

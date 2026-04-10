@@ -20,7 +20,7 @@ repository = "https://github.com/KilimcininKorOglu/desmos"
 
 [workspace.dependencies]
 ring = "0.17"
-blake3 = "1.5"
+blake3 = "=1.5.4"
 socket2 = "0.5"
 wintun = "0.5"
 argon2 = "0.5"
