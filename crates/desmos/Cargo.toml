@@ -8,6 +8,9 @@ authors.workspace = true
 repository.workspace = true
 description = "Desmos: cross-platform connection bonding VPN."
 
+[dependencies]
+desmos-cli = { path = "../desmos-cli" }
+
 [[bin]]
 name = "desmos"
 path = "src/main.rs"
