@@ -8,4 +8,7 @@ pub mod config;
 pub mod errors;
 pub mod log;
 
+#[cfg(unix)]
+pub mod pipeline;
+
 pub use errors::{CoreError, Result};

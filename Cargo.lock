@@ -12,10 +12,18 @@ dependencies = [
 [[package]]
 name = "desmos-cli"
 version = "0.1.0"
+dependencies = [
+ "desmos-core",
+ "desmos-proto",
+]
 
 [[package]]
 name = "desmos-core"
 version = "0.1.0"
+dependencies = [
+ "desmos-proto",
+ "desmos-rt",
+]
 
 [[package]]
 name = "desmos-http"

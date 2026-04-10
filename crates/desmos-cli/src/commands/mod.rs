@@ -1,6 +1,8 @@
 //! Subcommand implementations. Every command is a small struct that
-//! implements [`crate::Command`]. Task 5 ships stubs; later tasks replace
-//! them with real implementations.
+//! implements [`crate::Command`]. Task 5 shipped stubs; Task 14 replaced
+//! the `up` stub with the real plaintext-mode implementation.
+
+pub mod up;
 
 use std::io::Write;
 
@@ -8,6 +10,8 @@ use crate::dispatch::Command;
 use crate::errors::CliResult;
 use crate::output::Writer;
 use crate::parser::GlobalFlags;
+
+pub use up::UpCommand;
 
 /// Returns the list of standard commands registered with the dispatcher.
 pub fn all() -> Vec<Box<dyn Command>> {
@@ -38,19 +42,6 @@ fn stub_run(name: &str, subargs: &[String], globals: &GlobalFlags) -> CliResult 
         w.println(&format!("desmos: `{name}` not yet implemented"));
     }
     Ok(0)
-}
-
-pub struct UpCommand;
-impl Command for UpCommand {
-    fn name(&self) -> &'static str {
-        "up"
-    }
-    fn synopsis(&self) -> &'static str {
-        "Bring the tunnel up"
-    }
-    fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        stub_run(self.name(), subargs, globals)
-    }
 }
 
 pub struct DownCommand;

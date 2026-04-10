@@ -7,3 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 description = "Desmos hand-rolled CLI argument parser and subcommand dispatcher."
+
+[dependencies]
+desmos-core = { path = "../desmos-core" }
+desmos-proto = { path = "../desmos-proto" }

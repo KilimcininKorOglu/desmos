@@ -7,3 +7,7 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 description = "Desmos domain logic: bonding, session, config, logger, server, p2p, auth."
+
+[dependencies]
+desmos-proto = { path = "../desmos-proto" }
+desmos-rt = { path = "../desmos-rt" }
