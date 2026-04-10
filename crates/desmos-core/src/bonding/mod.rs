@@ -35,6 +35,7 @@ pub use score::LinkStats;
 pub use strategy::BondingStrategy;
 pub use strategy::LatencyAdaptive;
 pub use strategy::LinkSelection;
+pub use strategy::Redundant;
 pub use strategy::RoundRobin;
 pub use strategy::Weighted;
 

@@ -14,6 +14,7 @@ pub use inbound::forward_udp_to_tun;
 pub use inbound::forward_udp_to_tun_encrypted;
 pub use metrics::PipelineMetrics;
 pub use outbound::forward_tun_to_udp;
+pub use outbound::forward_tun_to_udp_bonded;
 pub use outbound::forward_tun_to_udp_encrypted;
 
 use std::net::SocketAddr;

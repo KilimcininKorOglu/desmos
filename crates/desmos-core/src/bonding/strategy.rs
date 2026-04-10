@@ -326,6 +326,42 @@ impl BondingStrategy for LatencyAdaptive {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Redundant
+// ---------------------------------------------------------------------------
+
+/// Send every packet on every healthy link. The outbound pipeline
+/// stage fans the sealed datagram out to each socket; the peer's
+/// anti-replay window drops the second (and every subsequent) copy
+/// as a duplicate, so the application sees the packet exactly once
+/// and the effective per-packet latency is the fastest link's
+/// arrival time. Total throughput is bounded by the slowest link
+/// because the pipeline blocks on whichever link is full. Good fit
+/// for real-time audio / gaming where reliability beats bandwidth.
+#[derive(Debug, Default)]
+pub struct Redundant;
+
+impl Redundant {
+    pub fn new() -> Self {
+        Self
+    }
+}
+
+impl BondingStrategy for Redundant {
+    fn name(&self) -> &'static str {
+        "redundant"
+    }
+
+    fn schedule(&self, _packet: &PacketMeta, links: &LinkTable) -> LinkSelection {
+        let healthy = links.healthy();
+        if healthy.is_empty() {
+            LinkSelection::None
+        } else {
+            LinkSelection::Many(healthy)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -706,6 +742,79 @@ mod tests {
                 LinkSelection::One(link) => assert_eq!(link.id, 2),
                 other => panic!("unexpected {other:?}"),
             }
+        }
+    }
+
+    // -----------------------------------------------------------------
+    // Redundant
+    // -----------------------------------------------------------------
+
+    #[test]
+    fn redundant_name_is_redundant() {
+        assert_eq!(Redundant::new().name(), "redundant");
+    }
+
+    #[test]
+    fn redundant_returns_every_healthy_link() {
+        let r = Redundant::new();
+        let table = LinkTable::new(vec![
+            Link::new(1, "a", sample_addr(), 10),
+            Link::new(2, "b", sample_addr(), 10),
+            Link::new(3, "c", sample_addr(), 10),
+        ]);
+        let p = sample_packet();
+        match r.schedule(&p, &table) {
+            LinkSelection::Many(links) => {
+                let ids: Vec<u32> = links.iter().map(|l| l.id).collect();
+                assert_eq!(ids, vec![1, 2, 3]);
+            }
+            other => panic!("expected Many, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn redundant_skips_unhealthy_links() {
+        let r = Redundant::new();
+        let mut links = vec![
+            Link::new(1, "a", sample_addr(), 10),
+            Link::new(2, "b", sample_addr(), 10),
+            Link::new(3, "c", sample_addr(), 10),
+        ];
+        links[1].mark_dead();
+        let table = LinkTable::new(links);
+        let p = sample_packet();
+        match r.schedule(&p, &table) {
+            LinkSelection::Many(links) => {
+                let ids: Vec<u32> = links.iter().map(|l| l.id).collect();
+                assert_eq!(ids, vec![1, 3]);
+            }
+            other => panic!("expected Many, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn redundant_with_zero_healthy_returns_none() {
+        let r = Redundant::new();
+        let mut links =
+            vec![Link::new(1, "a", sample_addr(), 10), Link::new(2, "b", sample_addr(), 10)];
+        links[0].mark_dead();
+        links[1].mark_dead();
+        let table = LinkTable::new(links);
+        let p = sample_packet();
+        assert!(matches!(r.schedule(&p, &table), LinkSelection::None));
+    }
+
+    #[test]
+    fn redundant_with_single_healthy_still_returns_many() {
+        let r = Redundant::new();
+        let table = LinkTable::new(vec![Link::new(7, "solo", sample_addr(), 10)]);
+        let p = sample_packet();
+        match r.schedule(&p, &table) {
+            LinkSelection::Many(links) => {
+                assert_eq!(links.len(), 1);
+                assert_eq!(links[0].id, 7);
+            }
+            other => panic!("expected Many, got {other:?}"),
         }
     }
 }
