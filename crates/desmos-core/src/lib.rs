@@ -7,6 +7,7 @@
 pub mod config;
 pub mod errors;
 pub mod log;
+pub mod session;
 
 #[cfg(unix)]
 pub mod pipeline;
