@@ -229,14 +229,13 @@ profile = "minimal"
 
 ### 6.3 `rustfmt.toml`
 
+Stable-only options. `imports_granularity`, `group_imports`, and `trailing_comma` are nightly-only rustfmt features and cannot be used because `rust-toolchain.toml` pins stable 1.75.0.
+
 ```toml
 edition = "2021"
 max_width = 100
 use_small_heuristics = "Max"
-imports_granularity = "Item"
-group_imports = "StdExternalCrate"
 reorder_imports = true
-trailing_comma = "Vertical"
 ```
 
 ### 6.4 `clippy.toml`
@@ -287,11 +286,11 @@ deny = [
 
 ### 6.6 `.gitignore`
 
+`Cargo.lock` is committed (binary project), so it must NOT appear in `.gitignore`. Do not add it back.
+
 ```
 target/
 **/*.rs.bk
-Cargo.lock       # NB: Cargo.lock IS committed (binary project). Un-comment only if this ever becomes pure library.
-!Cargo.lock
 node_modules/
 dist/
 .DS_Store
