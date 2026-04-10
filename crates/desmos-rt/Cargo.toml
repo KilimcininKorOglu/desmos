@@ -7,3 +7,6 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 description = "Desmos hand-rolled async runtime: reactor, TUN, sockets, timer, ring buffer."
+
+[dependencies]
+desmos-proto = { path = "../desmos-proto" }

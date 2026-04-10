@@ -4,11 +4,15 @@
 
 pub mod errors;
 pub mod flags;
+pub mod packet;
 pub mod types;
 pub mod wire;
 
 pub use errors::WireError;
 pub use flags::Flags;
+pub use packet::PacketBuf;
+pub use packet::PacketMeta;
+pub use packet::PACKET_OVERHEAD;
 pub use types::InterfaceId;
 pub use types::Seq;
 pub use types::SessionId;
