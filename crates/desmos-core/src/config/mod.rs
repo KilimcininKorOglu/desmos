@@ -18,6 +18,20 @@
 
 pub mod lexer;
 pub mod schema;
+pub mod validate;
+
+pub use validate::AuthConfig;
+pub use validate::AuthMethod;
+pub use validate::BondingStrategy;
+pub use validate::ClientConfig;
+pub use validate::Config;
+pub use validate::GeneralConfig;
+pub use validate::InterfaceConfig;
+pub use validate::LogLevel;
+pub use validate::Mode;
+pub use validate::P2pConfig;
+pub use validate::ServerConfig;
+pub use validate::WebuiConfig;
 
 use core::fmt;
 use std::collections::BTreeMap;

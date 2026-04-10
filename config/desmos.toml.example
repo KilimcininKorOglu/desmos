@@ -1,0 +1,107 @@
+# Desmos example configuration.
+#
+# Copy this file to /etc/desmos/desmos.toml (or the OS-specific path listed
+# in docs/cli.md) and edit the fields marked with CHANGE-ME before running
+# `desmos up`.
+
+[general]
+# Operating mode. One of: "client" | "server" | "p2p".
+mode = "client"
+
+# Log level. One of: "trace" | "debug" | "info" | "warn" | "error".
+log_level = "info"
+
+# Tunnel MTU in bytes. Valid range: 576..=9000. Default: 1400.
+tunnel_mtu = 1400
+
+# ----------------------------------------------------------------------------
+# Server section. Required when mode = "server"; ignored otherwise.
+# ----------------------------------------------------------------------------
+[server]
+# UDP endpoint the server listens on.
+listen = "0.0.0.0:4900"
+
+# Static X25519 public key in base64. CHANGE-ME.
+public_key = "REPLACE_WITH_SERVER_PUBLIC_KEY_BASE64"
+
+# Path to the server static private key, 0600, root-owned. CHANGE-ME.
+private_key_file = "/etc/desmos/server.key"
+
+# Maximum number of concurrent client sessions.
+max_clients = 100
+
+[server.auth]
+# Authentication method. One of: "psk" | "pubkey" | "totp" | "mtls".
+method = "psk"
+
+# psk method: shared secret mixed into the Noise IK handshake.
+psk = "REPLACE_WITH_SHARED_SECRET"
+
+# pubkey method: path to file containing one authorized public key per line.
+# authorized_keys_file = "/etc/desmos/authorized_keys"
+
+# totp method: base32-encoded HOTP secret.
+# totp_secret = "JBSWY3DPEHPK3PXP"
+
+# mtls method: path to the CA certificate that signs client certs.
+# ca_cert_file = "/etc/desmos/ca.crt"
+
+# ----------------------------------------------------------------------------
+# Client section. Required when mode = "client"; ignored otherwise.
+# ----------------------------------------------------------------------------
+[client]
+# Remote server endpoint.
+server = "vpn.example.com:4900"
+
+# Server static public key in base64. CHANGE-ME.
+server_public_key = "REPLACE_WITH_SERVER_PUBLIC_KEY_BASE64"
+
+# Client static private key, 0600. CHANGE-ME.
+private_key_file = "/home/user/.config/desmos/client.key"
+
+# Bonding strategy. One of: "round-robin" | "weighted" | "latency-adaptive" | "redundant".
+bonding_strategy = "latency-adaptive"
+
+# Reorder buffer window in milliseconds. 0..=10000.
+reorder_window_ms = 50
+
+# DNS leak protection: when true, system resolvers are routed through the tunnel.
+dns_leak_protection = true
+
+# DNS servers the tunnel will hand out to the host.
+dns_servers = ["1.1.1.1", "8.8.8.8"]
+
+# One [[client.interfaces]] entry per physical interface to bond. At least one is required.
+[[client.interfaces]]
+name = "eth0"
+weight = 100
+enabled = true
+
+[[client.interfaces]]
+name = "wlan0"
+weight = 80
+enabled = true
+
+[[client.interfaces]]
+name = "usb0"
+weight = 60
+enabled = false
+
+# ----------------------------------------------------------------------------
+# Web UI and REST API. Bound to localhost by default.
+# ----------------------------------------------------------------------------
+[webui]
+enabled = true
+listen = "127.0.0.1:8080"
+username = "admin"
+# Argon2id PHC string. Generate with `desmos webui set-password`. CHANGE-ME.
+password_hash = "$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHRzYWx0$8C9wKcyKj9Yh3IKvQkVtGvSiwqZY9oQWxZ6jjaR9c2c"
+
+# ----------------------------------------------------------------------------
+# P2P mode. Required when mode = "p2p"; ignored otherwise.
+# ----------------------------------------------------------------------------
+[p2p]
+peer_public_key = "REPLACE_WITH_PEER_PUBLIC_KEY_BASE64"
+peer_endpoint = "peer.example.com:4900"
+stun_servers = ["stun.l.google.com:19302", "stun.cloudflare.com:3478"]
+relay_servers = []
