@@ -1,0 +1,40 @@
+[workspace]
+resolver = "2"
+members = [
+    "crates/desmos-proto",
+    "crates/desmos-rt",
+    "crates/desmos-core",
+    "crates/desmos-http",
+    "crates/desmos-webui",
+    "crates/desmos-cli",
+    "crates/desmos",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.75"
+license = "MIT"
+authors = ["KilimcininKorOglu"]
+repository = "https://github.com/KilimcininKorOglu/desmos"
+
+[workspace.dependencies]
+ring = "0.17"
+blake3 = "1.5"
+socket2 = "0.5"
+wintun = "0.5"
+argon2 = "0.5"
+
+proptest = "1.5"
+criterion = "0.5"
+insta = "1.40"
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "debuginfo"
+panic = "abort"
+
+[profile.bench]
+inherits = "release"

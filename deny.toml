@@ -1,0 +1,34 @@
+[advisories]
+vulnerability = "deny"
+unmaintained = "warn"
+yanked = "deny"
+
+[licenses]
+unlicensed = "deny"
+allow = ["MIT", "Apache-2.0", "ISC", "CC0-1.0", "BSD-3-Clause", "OpenSSL"]
+
+[bans]
+multiple-versions = "deny"
+deny = [
+    { name = "tokio" },
+    { name = "async-std" },
+    { name = "mio" },
+    { name = "hyper" },
+    { name = "reqwest" },
+    { name = "clap" },
+    { name = "serde" },
+    { name = "serde_json" },
+    { name = "toml" },
+    { name = "log" },
+    { name = "tracing" },
+    { name = "rustls" },
+    { name = "anyhow" },
+    { name = "thiserror" },
+    { name = "arc-swap" },
+    { name = "once_cell" },
+    { name = "parking_lot" },
+    { name = "crossbeam" },
+    { name = "zeroize" },
+    { name = "base64" },
+    { name = "hex" },
+]

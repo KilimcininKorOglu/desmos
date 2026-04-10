@@ -1,0 +1,9 @@
+[package]
+name = "desmos-http"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "Desmos hand-rolled HTTP/1.1 server, WebSocket, JSON codec, and Basic Auth."
