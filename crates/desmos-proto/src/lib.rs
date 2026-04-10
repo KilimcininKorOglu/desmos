@@ -5,6 +5,7 @@
 pub mod crypto;
 pub mod errors;
 pub mod flags;
+pub mod handshake;
 pub mod packet;
 pub mod types;
 pub mod wire;
