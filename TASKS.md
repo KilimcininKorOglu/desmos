@@ -1,22 +1,23 @@
 # Desmos — Tasks
 
-> Ordered work breakdown derived from `IMPLEMENTATION.md`. Execute sequentially. Each task is self-contained, names its exact files, and is sized for a single Claude Code session (2-8 hours). Phase numbering mirrors PRD §12, with a new **Phase 0** for scaffolding.
+> Ordered work breakdown derived from `IMPLEMENTATION.md`. Execute sequentially. Each task is self-contained, names its exact files, and is sized for a single Claude Code session (2-6 hours). Phase numbering mirrors PRD §12, with a new **Phase 0** for scaffolding.
 
 ## Summary
 
-| Metric            | Value                          |
-|-------------------|--------------------------------|
-| Total Tasks       | 58                             |
-| Phases            | 9 (Phase 0 + PRD Phases 1-7 + Release) |
-| Estimated Effort  | ~26-32 weeks solo, 6-8 weeks with 3 devs |
-| Foundation Complete | After Task 6                 |
-| First Tunnel      | After Task 13 (Linux, single interface, no encryption) |
-| First Encrypted Tunnel | After Task 22 (Noise IK + AEAD) |
-| First Bonded Tunnel | After Task 28                 |
-| MVP (Linux client+server, all 4 strategies) | After Task 40 |
-| P2P Working       | After Task 44                  |
-| All Platforms     | After Task 52                  |
-| Full Release (v1.0) | After Task 58                 |
+| Metric                 | Value                                              |
+|------------------------|----------------------------------------------------|
+| Total Tasks            | 69                                                 |
+| Phases                 | 9 (Phase 0 + PRD Phases 1-7 + Release)             |
+| Estimated Effort       | ~28-34 weeks solo, 7-9 weeks with 3 devs           |
+| Foundation Complete    | After Task 6                                       |
+| First Tunnel           | After Task 14 (plaintext Linux)                    |
+| First Encrypted Tunnel | After Task 19 (Noise IK + AEAD)                    |
+| First Bonded Tunnel    | After Task 24                                      |
+| MVP (Linux, 4 strategies, server) | After Task 36                            |
+| P2P Working            | After Task 39                                      |
+| All Platforms          | After Task 49                                      |
+| Web UI Complete        | After Task 63                                      |
+| Full Release (v1.0)    | After Task 69                                      |
 
 ---
 
@@ -28,39 +29,32 @@
 
 **Create the Cargo workspace skeleton with all 7 crates, toolchain pin, lint configs, and deny policy.**
 
-> **Working directory:** CWD is the project root. Do not create a `desmos/` wrapper subfolder. `SPECIFICATION.md`, `IMPLEMENTATION.md`, `TASKS.md`, `BRANDING.md`, `PROMPT.md`, `prd.md` already live at the CWD root — leave them untouched.
+> **Working directory:** CWD is the project root. Do not create a wrapper subfolder. Planning docs (`SPECIFICATION.md`, `IMPLEMENTATION.md`, `TASKS.md`, `BRANDING.md`, `PROMPT.md`, `prd.md`) already live at the CWD root — leave them untouched.
 
 **Files to create:**
-- `Cargo.toml` — workspace root with `[workspace] members = [...]`, shared `[profile.release]`, pinned runtime dep versions
-- `rust-toolchain.toml` — `channel = "1.75.0"`, `components = ["rustfmt", "clippy"]`, `targets = [...]`
-- `rustfmt.toml` — 100-column soft limit, trailing commas
+- `Cargo.toml` — workspace root, `[workspace] members`, shared `[profile.release]` (lto=thin, codegen-units=1, panic=abort, strip=debuginfo), pinned runtime dep versions
+- `rust-toolchain.toml` — `channel = "1.75.0"`, `components = ["rustfmt", "clippy"]`, `targets = [<Tier 1 list>]`
+- `rustfmt.toml` — 100-col soft limit, trailing commas, single-import-per-line
 - `clippy.toml` — `msrv = "1.75.0"`
-- `deny.toml` — allow-list: only `ring`, `blake3`, `socket2`, `wintun`, `argon2` (+ dev-deps `proptest`, `criterion`, `insta`)
-- `.gitignore` — `target/`, `Cargo.lock` excluded for libraries / included for binaries (committed), `node_modules/`, `dist/`, `.DS_Store`, IDE files
+- `deny.toml` — allow-list: only `ring`, `blake3`, `socket2`, `wintun`, `argon2` runtime; `proptest`, `criterion`, `insta` dev-only
+- `.gitignore` — `target/`, `node_modules/`, `dist/`, `.DS_Store`, IDE files; `Cargo.lock` committed (binary project)
 - `LICENSE` — MIT
-- `README.md` — minimal stub, name + tagline + "see SPECIFICATION.md"
+- `README.md` — minimal stub, name + tagline + pointer to SPECIFICATION.md
 - `CHANGELOG.md` — empty keepachangelog.com format
-- `crates/desmos-proto/Cargo.toml`, `crates/desmos-proto/src/lib.rs` (empty `//!` docstring)
-- `crates/desmos-rt/Cargo.toml`, `crates/desmos-rt/src/lib.rs`
-- `crates/desmos-core/Cargo.toml`, `crates/desmos-core/src/lib.rs`
-- `crates/desmos-http/Cargo.toml`, `crates/desmos-http/src/lib.rs`
-- `crates/desmos-webui/Cargo.toml`, `crates/desmos-webui/src/lib.rs`
-- `crates/desmos-cli/Cargo.toml`, `crates/desmos-cli/src/lib.rs`
-- `crates/desmos/Cargo.toml`, `crates/desmos/src/main.rs` (`fn main() { println!("desmos"); }`)
-
-**Commands to run:**
-```bash
-cargo check --workspace
-cargo fmt --all --check
-cargo clippy --workspace --all-targets -- -D warnings
-```
+- `crates/desmos-proto/{Cargo.toml,src/lib.rs}`
+- `crates/desmos-rt/{Cargo.toml,src/lib.rs}`
+- `crates/desmos-core/{Cargo.toml,src/lib.rs}`
+- `crates/desmos-http/{Cargo.toml,src/lib.rs}`
+- `crates/desmos-webui/{Cargo.toml,src/lib.rs}`
+- `crates/desmos-cli/{Cargo.toml,src/lib.rs}`
+- `crates/desmos/{Cargo.toml,src/main.rs}` — `fn main() { println!("desmos"); }`
 
 **Acceptance Criteria:**
 - [ ] `cargo check --workspace` succeeds with zero warnings
 - [ ] `cargo fmt --all --check` passes
 - [ ] `cargo clippy --workspace --all-targets -- -D warnings` passes
 - [ ] `cargo run -p desmos` prints `desmos`
-- [ ] `rustup show` confirms the pinned 1.75.0 toolchain is active
+- [ ] `rustup show` confirms pinned toolchain
 
 **Dependencies:** None
 **Effort:** 2-3 hours
@@ -70,24 +64,19 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ### Task 2: Core Error Types & Logging Skeleton
 
-**Define the error taxonomy and a bare-bones structured logger.**
+**Define the error taxonomy and a bare-bones structured logger with a ring buffer for later Web UI streaming.**
 
 **Files to create:**
 - `crates/desmos-core/src/errors.rs` — `CoreError` enum + `Result` alias
-- `crates/desmos-core/src/log/mod.rs` — `log!(level, target, msg, k=v)` macro
-- `crates/desmos-core/src/log/sink.rs` — stderr line-buffered sink
-- `crates/desmos-core/src/log/ring.rs` — bounded ring buffer for Web UI streaming
-
-**Code requirements:**
-- Log entries are plain-text by default, JSON when `log.format = "json"` in config (implemented later; keep sink trait extensible).
-- Log macro captures `ts_us`, `level`, `target`, `msg`, and zero-or-more key-value pairs.
-- Ring buffer capacity: 500 lines default, configurable later.
-- Secret-field filter skeleton (`redact_keys: ["psk", "password", "private_key"]`).
+- `crates/desmos-core/src/log/mod.rs` — `log!(level, target, msg, k=v, ...)` macro
+- `crates/desmos-core/src/log/sink.rs` — stderr line-buffered sink, sink trait
+- `crates/desmos-core/src/log/ring.rs` — bounded ring buffer (500 lines default)
+- `crates/desmos-core/src/log/redact.rs` — secret-field filter (`psk`, `password`, `private_key`)
 
 **Acceptance Criteria:**
-- [ ] Unit test: `log!(info, "tunnel", "up", iface="eth0")` produces a line containing `level=info target=tunnel msg=up iface=eth0`.
-- [ ] Unit test: ring buffer wraps at capacity, oldest entry evicted.
-- [ ] Secret-field redactor replaces `psk=abc123` with `psk=***`.
+- [ ] Unit test: `log!(info, "tunnel", "up", iface="eth0")` emits a line containing `level=info target=tunnel msg=up iface=eth0`
+- [ ] Ring buffer wraps at capacity, oldest entry evicted
+- [ ] Redactor replaces `psk=abc123` with `psk=***`
 
 **Dependencies:** Task 1
 **Effort:** 3-4 hours
@@ -95,24 +84,22 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ---
 
-### Task 3: Hand-Rolled TOML Parser
+### Task 3: Hand-Rolled TOML Subset Parser
 
 **Implement a strict TOML subset parser sufficient for the Desmos config schema.**
 
 **Files to create:**
-- `crates/desmos-core/src/config/lexer.rs` — tokenizer (keys, strings, numbers, booleans, `[section]`, `[[array]]`)
+- `crates/desmos-core/src/config/lexer.rs` — tokenizer
 - `crates/desmos-core/src/config/schema.rs` — recursive-descent parser producing a `Value` tree
-- `crates/desmos-core/src/config/mod.rs` — parser entry point, error formatter with `path.to.field` trace
+- `crates/desmos-core/src/config/mod.rs` — entry point, `path.to.field` error formatter
 
-**Supported subset:**
-- Tables, arrays of tables, basic strings (no multi-line), integers, floats, booleans, arrays of primitives.
-- **Not supported:** inline tables, dotted keys in value position, multi-line literal strings.
+**Supported subset:** tables, arrays of tables, basic strings, integers, floats, booleans, arrays of primitives. Unsupported: inline tables, dotted keys in value position, multi-line literal strings.
 
 **Acceptance Criteria:**
-- [ ] Parses the full `config/desmos.toml.example` from IMPLEMENTATION.md §8.2 (stub the file with all fields).
-- [ ] Rejects unknown top-level sections with `unknown_section: <name>`.
-- [ ] Rejects type mismatches with `type_mismatch: <path>: expected <T>, got <U>`.
-- [ ] `proptest` round-trips valid `Value` trees (`parse(encode(v)) == v`) for 1000 random cases.
+- [ ] Parses the full example config (Task 4 supplies the example).
+- [ ] Unknown section returns `unknown_section: <name>`.
+- [ ] Type mismatch returns `type_mismatch: <path>: expected <T>, got <U>`.
+- [ ] `proptest` roundtrip on random valid `Value` trees (1000 cases).
 
 **Dependencies:** Task 1, Task 2
 **Effort:** 6-8 hours
@@ -120,23 +107,19 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ---
 
-### Task 4: Config Schema Validation
+### Task 4: Config Schema Validation + Example File
 
-**Turn the parsed `Value` tree into a strongly-typed `Config` struct with full validation.**
+**Turn the parsed `Value` tree into a strongly-typed `Config` with full validation. Supply the fully commented example.**
 
 **Files to create:**
 - `crates/desmos-core/src/config/validate.rs` — `Config::from_value(&Value) -> Result<Config, ValidationError>`
 - `config/desmos.toml.example` — fully commented example at the CWD root
 
-**Code requirements:**
-- All fields from IMPLEMENTATION.md §8.2 populated with defaults.
-- Validation rules: `mode` is one of `client|server|p2p`; `bonding_strategy` is one of 4 names; `interfaces` count 1..8; `listen` parses as `SocketAddr`.
-- `webui.password_hash` validated as a parseable Argon2id encoded string (use `argon2` crate).
-
 **Acceptance Criteria:**
-- [ ] Parsing `config/desmos.toml.example` produces a `Config` with every field set.
-- [ ] Removing a required field yields `missing_field: <path>`.
-- [ ] Out-of-range values produce `out_of_range: <path>`.
+- [ ] Parsing `config/desmos.toml.example` yields a populated `Config`.
+- [ ] Missing required field returns `missing_field: <path>`.
+- [ ] Out-of-range value returns `out_of_range: <path>`.
+- [ ] `webui.password_hash` verified as a parseable Argon2id encoded string.
 
 **Dependencies:** Task 3
 **Effort:** 3-4 hours
@@ -144,23 +127,23 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ---
 
-### Task 5: Hand-Rolled CLI Parser
+### Task 5: Hand-Rolled CLI Parser + Dispatcher
 
 **Implement `desmos-cli` argument parser and subcommand dispatcher skeleton.**
 
 **Files to create:**
 - `crates/desmos-cli/src/parser.rs` — long/short flag parser, subcommand detection
 - `crates/desmos-cli/src/dispatch.rs` — `Command` trait + `Dispatcher`
-- `crates/desmos-cli/src/output.rs` — colored vs JSON output modes (no color crate; hand-rolled ANSI)
-- `crates/desmos-cli/src/commands/mod.rs` — stubs for `up`, `down`, `status`, `interfaces`, `keygen`, `config`, `webui`, `bonding`, `clients`, `stats`
+- `crates/desmos-cli/src/output.rs` — colored vs JSON output (hand-rolled ANSI)
+- `crates/desmos-cli/src/commands/mod.rs` — stubs for all subcommands
 - `crates/desmos-cli/src/errors.rs`
-- `crates/desmos/src/main.rs` — wire `desmos-cli::Dispatcher::dispatch`
+- `crates/desmos/src/main.rs` — wire `Dispatcher::dispatch`
 
 **Acceptance Criteria:**
 - [ ] `desmos --help` lists all subcommands.
 - [ ] `desmos status --json` dispatches to the `status` stub and prints `{}`.
-- [ ] Global flags `-c`, `-v`, `-q`, `--no-color`, `--json` are parsed into a `GlobalFlags` struct.
-- [ ] Unknown subcommand returns exit code 64 and suggests the closest match (Levenshtein-ish).
+- [ ] Global flags `-c`, `-v`, `-q`, `--no-color`, `--json` parsed into `GlobalFlags`.
+- [ ] Unknown subcommand returns exit code 64 with a closest-match suggestion.
 
 **Dependencies:** Task 1, Task 2
 **Effort:** 4-6 hours
@@ -173,26 +156,15 @@ cargo clippy --workspace --all-targets -- -D warnings
 **Set up GitHub Actions CI running fmt, clippy, build, and test across all Tier 1 targets.**
 
 **Files to create:**
-- `.github/workflows/ci.yml` — matrix: `ubuntu-latest × (x86_64-unknown-linux-musl, x86_64-unknown-linux-gnu, aarch64-unknown-linux-musl via cross)`, `macos-14 × (x86_64-apple-darwin, aarch64-apple-darwin)`, `windows-latest × (x86_64-pc-windows-msvc)`, `ubuntu-latest × (x86_64-unknown-freebsd via cross)`
+- `.github/workflows/ci.yml` — matrix: `ubuntu-latest × (x86_64-unknown-linux-musl, x86_64-unknown-linux-gnu, aarch64-unknown-linux-musl)`, `macos-14 × (x86_64-apple-darwin, aarch64-apple-darwin)`, `windows-latest × (x86_64-pc-windows-msvc)`, `ubuntu-latest × (x86_64-unknown-freebsd via cross)`
 - `.github/workflows/security.yml` — `cargo-deny check`, `cargo-audit`
 - `.github/ISSUE_TEMPLATE/bug_report.md`, `.github/ISSUE_TEMPLATE/feature_request.md`
 
-**CI steps per job:**
-```yaml
-- checkout
-- cache ~/.cargo, target/
-- rustup show (pinned toolchain)
-- cargo fmt --all --check
-- cargo clippy --workspace --all-targets --target ${{ matrix.target }} -- -D warnings
-- cargo build --workspace --target ${{ matrix.target }}
-- cargo test --workspace --target ${{ matrix.target }}  # host targets only
-```
-
 **Acceptance Criteria:**
-- [ ] A push to `main` triggers a matrix run on all 7 Tier 1 targets.
+- [ ] Push to `main` triggers the matrix on all 7 Tier 1 targets.
 - [ ] Every target compiles cleanly.
-- [ ] `cargo-deny` enforces the 5-crate runtime allow-list.
-- [ ] Build artifacts cached between runs to stay under 10 minutes per job.
+- [ ] `cargo-deny` enforces the runtime allow-list.
+- [ ] Each job stays under 10 min with caching.
 
 **Dependencies:** Task 1-5
 **Effort:** 4-5 hours
@@ -209,55 +181,54 @@ cargo clippy --workspace --all-targets -- -D warnings
 **Implement the 16-byte DWP header encode/decode with property tests.**
 
 **Files to create:**
-- `crates/desmos-proto/src/wire.rs` — `Header` struct + `encode(&self, &mut [u8; 16])` + `decode(&[u8]) -> Result<Header, WireError>`
-- `crates/desmos-proto/src/flags.rs` — `Flags` bitfield (FIN, ACK, FRAG, REDUNDANT, PRIORITY)
-- `crates/desmos-proto/src/types.rs` — `SessionId(u16)`, `InterfaceId(u8)`, `Seq(u32)`, `TimestampUs(u32)`
+- `crates/desmos-proto/src/wire.rs` — `Header` struct + `encode` + `decode`
+- `crates/desmos-proto/src/flags.rs` — `Flags` bitfield
+- `crates/desmos-proto/src/types.rs` — `SessionId`, `InterfaceId`, `Seq`, `TimestampUs`
 - `crates/desmos-proto/src/errors.rs`
-- `crates/desmos-proto/tests/wire_roundtrip.rs` — `proptest` roundtrip
+- `crates/desmos-proto/tests/wire_roundtrip.rs` — `proptest`
 
 **Acceptance Criteria:**
-- [ ] Header encodes to exactly 16 bytes big-endian layout from IMPLEMENTATION.md §4.1.
-- [ ] Unknown version rejected with `WireError::UnsupportedVersion`.
-- [ ] Payload length > MTU rejected.
-- [ ] `proptest` runs 1000 cases: `decode(encode(h)) == h` for every valid `Header`.
+- [ ] Encodes to exactly 16 bytes big-endian per IMPLEMENTATION.md §4.1.
+- [ ] Unknown version returns `WireError::UnsupportedVersion`.
+- [ ] `proptest` 1000 cases: `decode(encode(h)) == h`.
 
 **Dependencies:** Task 1
 **Effort:** 3-4 hours
-**Refs:** IMPLEMENTATION.md §4.1, PRD §3.1
+**Refs:** IMPLEMENTATION.md §4.1
 
 ---
 
-### Task 8: PacketBuf and Zero-Copy Buffer Pool
+### Task 8: PacketBuf and Buffer Pool
 
-**Define the packet buffer type used across the pipeline with a simple pool.**
+**Owning packet buffer + preallocated recycling pool.**
 
 **Files to create:**
-- `crates/desmos-proto/src/packet.rs` — `PacketBuf` (owning `Box<[u8]>` with live length), `PacketMeta` (link id, seq, size)
-- `crates/desmos-rt/src/pool.rs` — `PacketPool` (preallocated ring of `PacketBuf` with atomic recycle)
+- `crates/desmos-proto/src/packet.rs` — `PacketBuf`, `PacketMeta`
+- `crates/desmos-rt/src/pool.rs` — `PacketPool`
 
 **Acceptance Criteria:**
-- [ ] `PacketBuf::new(mtu)` allocates a buffer of tunnel MTU + 256 (crypto overhead + header).
-- [ ] `PacketPool::acquire` returns an unused buffer or allocates a new one, `release` returns it.
-- [ ] Benchmark shows pool hit rate > 99% on a 10k-iteration loop.
+- [ ] `PacketBuf::new(mtu)` allocates `mtu + 256` bytes (crypto + header overhead).
+- [ ] Pool `acquire` returns unused buffer or allocates; `release` returns it.
+- [ ] Benchmark: pool hit rate > 99% in a 10k loop.
 
 **Dependencies:** Task 7
 **Effort:** 3 hours
-**Refs:** IMPLEMENTATION.md §2.6, §4.1
+**Refs:** IMPLEMENTATION.md §2.6
 
 ---
 
 ### Task 9: SPSC Ring Buffer
 
-**Implement the lock-free SPSC ring used between pipeline stages.**
+**Lock-free SPSC ring used between pipeline stages.**
 
 **Files to create:**
-- `crates/desmos-rt/src/ring.rs` — `SpscRing<T>` with `try_push` / `try_pop` and power-of-two capacity
+- `crates/desmos-rt/src/ring.rs` — `SpscRing<T>` with `try_push` / `try_pop`, power-of-two capacity
 - `crates/desmos-rt/tests/ring_spsc.rs` — two-thread stress test
 
 **Acceptance Criteria:**
-- [ ] Unit test: push 1M items from a producer thread, pop 1M items on consumer thread, order preserved.
-- [ ] Cache-padded head/tail (`#[repr(align(64))]`).
-- [ ] No `unsafe` outside a commented, audited block.
+- [ ] 1M item push/pop across threads, order preserved.
+- [ ] Cache-padded head/tail.
+- [ ] All `unsafe` commented and audited.
 
 **Dependencies:** Task 1
 **Effort:** 3-4 hours
@@ -267,39 +238,36 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ### Task 10: Linux epoll Reactor
 
-**Implement the Linux event-loop backend behind the `Reactor` trait.**
+**Linux event-loop backend behind the `Reactor` trait.**
 
 **Files to create:**
 - `crates/desmos-rt/src/reactor.rs` — `Reactor` trait, `Event`, `Token`, `Tag`
-- `crates/desmos-rt/src/linux/mod.rs`
-- `crates/desmos-rt/src/linux/reactor.rs` — `epoll_create1`, `epoll_ctl`, `epoll_wait` via `libc`-free raw FFI (declare syscall numbers locally) or use `syscalls` feature of `libc` (NB: `libc` is part of `std`, allowed)
 - `crates/desmos-rt/src/event.rs`
-
-**Note:** `libc` comes with the toolchain and is not counted as an external crate; we can call `libc::syscall`. If the team prefers to avoid even `libc`, declare raw syscall numbers.
+- `crates/desmos-rt/src/linux/mod.rs`
+- `crates/desmos-rt/src/linux/reactor.rs` — `epoll_create1`, `epoll_ctl`, `epoll_wait`
 
 **Acceptance Criteria:**
-- [ ] Register a UDP socket, block on `poll`, receive a read-ready event when a packet arrives.
-- [ ] Register a TUN fd, receive a read-ready event when an IP packet is injected.
-- [ ] Deregister cleans up epoll state; no fd leaks under 1000 register/deregister cycles.
-- [ ] Test uses a Tokio-free async primitive (direct blocking + helper thread).
+- [ ] Register a UDP socket, receive read-ready on incoming packet.
+- [ ] Register a TUN fd, receive read-ready on injected IP packet.
+- [ ] 1000 register/deregister cycles → no fd leaks.
 
 **Dependencies:** Task 9
 **Effort:** 6-8 hours
-**Refs:** IMPLEMENTATION.md §2.1, SPECIFICATION.md §4.1
+**Refs:** IMPLEMENTATION.md §2.1
 
 ---
 
 ### Task 11: Timer Wheel
 
-**Implement a hierarchical timer wheel (4 levels × 32 slots) for keepalives, probes, and rekey.**
+**Hierarchical timer wheel (4 levels × 32 slots) for keepalives, probes, rekey.**
 
 **Files to create:**
 - `crates/desmos-rt/src/timer.rs` — `TimerWheel`, `Timer`, `TimerHandle`
 
 **Acceptance Criteria:**
-- [ ] `schedule(after, callback_id)` + `poll(now)` returns expired callback IDs.
-- [ ] 1 ms tick granularity at level 0; 1 s at level 3.
-- [ ] Benchmarks: 1M insertions + pops in < 200 ms on modern x86_64.
+- [ ] `schedule(after, id)` + `poll(now)` returns expired IDs.
+- [ ] 1 ms tick granularity at level 0, 1 s at level 3.
+- [ ] 1M insert+pop in < 200 ms (x86_64).
 
 **Dependencies:** Task 10
 **Effort:** 5-6 hours
@@ -313,13 +281,13 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 **Files to create:**
 - `crates/desmos-rt/src/tun.rs` — `Tun` trait
-- `crates/desmos-rt/src/linux/tun.rs` — `LinuxTun` impl
-- `crates/desmos-rt/tests/tun_linux.rs` — integration test (requires `CAP_NET_ADMIN`, `#[ignore]` by default)
+- `crates/desmos-rt/src/linux/tun.rs` — `LinuxTun`
+- `crates/desmos-rt/tests/tun_linux.rs` — `#[ignore]` by default (needs `CAP_NET_ADMIN`)
 
 **Acceptance Criteria:**
-- [ ] `LinuxTun::create("desmos0")` returns a `Tun` usable via `read`/`write`.
-- [ ] On `Drop`, the TUN device is removed.
-- [ ] Writing an IPv4 packet to the TUN results in the kernel routing it back through the process.
+- [ ] `LinuxTun::create("desmos0")` returns usable `Tun`.
+- [ ] Drop removes the device.
+- [ ] Writing an IPv4 packet to the TUN round-trips through the kernel.
 
 **Dependencies:** Task 10
 **Effort:** 4-5 hours
@@ -329,16 +297,16 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ### Task 13: UDP Socket with `SO_BINDTODEVICE`
 
-**Wrap `socket2::Socket` with per-interface binding and the reactor integration.**
+**Per-interface UDP sockets integrated with the reactor.**
 
 **Files to create:**
-- `crates/desmos-rt/src/socket.rs` — `UdpSocket`, `bind_to_device` helper
-- `crates/desmos-rt/src/linux/bind_device.rs` — `SO_BINDTODEVICE` setsockopt
+- `crates/desmos-rt/src/socket.rs` — `UdpSocket`, `bind_to_device`
+- `crates/desmos-rt/src/linux/bind_device.rs`
 
 **Acceptance Criteria:**
-- [ ] `UdpSocket::bind_on_interface("eth0")` produces a socket that only egresses via `eth0`.
-- [ ] Integration test on a two-namespace setup confirms packets exit the chosen interface.
-- [ ] Socket integrates with the reactor for non-blocking `recv` / `send`.
+- [ ] `UdpSocket::bind_on_interface("eth0")` egresses only via `eth0`.
+- [ ] Two-namespace integration test confirms the chosen interface.
+- [ ] Non-blocking `recv` / `send` integrate with the reactor.
 
 **Dependencies:** Task 10, Task 12
 **Effort:** 4-5 hours
@@ -348,67 +316,60 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ### Task 14: Single-Interface Plaintext Forwarder
 
-**Wire TUN → UDP → TUN loop with no encryption as a smoke test for the runtime layer.**
+**Wire TUN → UDP → TUN with no encryption as a runtime-layer smoke test.**
 
-**Files to create/modify:**
-- `crates/desmos-core/src/pipeline/mod.rs`
-- `crates/desmos-core/src/pipeline/outbound.rs` — stub that copies TUN bytes into UDP payload with a DWP header (Type=Data, no encryption, zero tag)
-- `crates/desmos-core/src/pipeline/inbound.rs` — inverse
-- `crates/desmos-cli/src/commands/up.rs` — wire it behind `desmos up --mode plaintext` (hidden dev flag)
-- `tests/e2e/plaintext_loopback.rs` — spin up two instances on localhost via veth pair, ping through
+**Files to create:**
+- `crates/desmos-core/src/pipeline/{mod,outbound,inbound}.rs`
+- `crates/desmos-cli/src/commands/up.rs` — hidden `--mode plaintext`
+- `tests/e2e/plaintext_loopback.rs` — two instances via veth pair
 
 **Acceptance Criteria:**
-- [ ] `desmos up --mode plaintext` brings up a `desmos0` TUN.
-- [ ] `ping 10.200.0.2` from inside the namespace round-trips through the UDP loop.
+- [ ] `desmos up --mode plaintext` creates `desmos0`.
+- [ ] `ping 10.200.0.2` round-trips through UDP loop.
 - [ ] Teardown removes TUN and closes sockets.
 
 **Dependencies:** Task 7, Task 10-13
 **Effort:** 5-6 hours
-**Refs:** PRD §12 Phase 1 exit criteria
+**Refs:** PRD §12 Phase 1
 
 ---
 
 ## Phase 2: Crypto and Bonding v1
 
-> Matches PRD §12 Phase 2 — Noise IK handshake, ChaCha20-Poly1305 AEAD, session management, Round-Robin bonding, reorder buffer, probing. After this phase: an encrypted, multi-interface tunnel works with the default RR strategy.
+> Matches PRD §12 Phase 2 — Noise IK, AEAD, sessions, Round-Robin, reorder, probing.
 
 ### Task 15: Crypto Wrappers
 
-**Wrap `ring` and `blake3` behind Desmos types.**
+**Wrap `ring` and `blake3`.**
 
 **Files to create:**
-- `crates/desmos-proto/src/crypto/mod.rs`
-- `crates/desmos-proto/src/crypto/aead.rs` — `Aead::seal / open` via `ring::aead::ChaCha20Poly1305`
-- `crates/desmos-proto/src/crypto/x25519.rs` — keypair gen + DH via `ring::agreement::X25519`
-- `crates/desmos-proto/src/crypto/hkdf.rs` — HKDF-BLAKE3
-- `crates/desmos-proto/src/crypto/blake3.rs` — hash helpers
+- `crates/desmos-proto/src/crypto/{mod,aead,x25519,hkdf,blake3}.rs`
 - `crates/desmos-proto/tests/aead_roundtrip.rs`
 
 **Acceptance Criteria:**
-- [ ] Seal/open round-trip for random plaintext.
-- [ ] Wrong key fails open with a typed error.
-- [ ] Tamper with the tag fails open.
-- [ ] HKDF produces deterministic output against a test vector.
+- [ ] Seal/open round-trip.
+- [ ] Wrong key fails open with typed error.
+- [ ] Tag tamper fails open.
+- [ ] HKDF matches a test vector.
 
 **Dependencies:** Task 1
 **Effort:** 4 hours
-**Refs:** IMPLEMENTATION.md §2.3, SPECIFICATION.md §8.3
+**Refs:** IMPLEMENTATION.md §2.3
 
 ---
 
 ### Task 16: Noise IK State Machine
 
-**Implement the Noise IK handshake pattern used by Desmos.**
+**Implement the Noise IK handshake pattern.**
 
 **Files to create:**
-- `crates/desmos-proto/src/handshake/mod.rs` — `HandshakeState`, `HandshakeStep`
-- `crates/desmos-proto/src/handshake/noise.rs` — IK-specific state machine (init → resp hello → first transport)
+- `crates/desmos-proto/src/handshake/{mod,noise}.rs`
 - `crates/desmos-proto/tests/noise_ik.rs`
 
 **Acceptance Criteria:**
-- [ ] Two handshake states converge to the same transport keys in < 2 message exchanges.
-- [ ] Unknown server static key fails the responder.
-- [ ] Test vector matches a reference Noise IK implementation (document the reference used).
+- [ ] Two states converge to matching transport keys in ≤ 2 exchanges.
+- [ ] Unknown server static key rejects on responder.
+- [ ] Matches a documented reference test vector.
 
 **Dependencies:** Task 15
 **Effort:** 8 hours
@@ -416,21 +377,18 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ---
 
-### Task 17: Session Typestate
+### Task 17: Session Typestate + Manager
 
-**Define `Session<Handshaking|Established|Rekeying|Closed>` and the transition API.**
+**`Session<Handshaking|Established|Rekeying|Closed>` + `SessionTable`.**
 
 **Files to create:**
-- `crates/desmos-core/src/session/mod.rs` — typestate structs
-- `crates/desmos-core/src/session/manager.rs` — `SessionTable`
-- `crates/desmos-core/src/session/keepalive.rs` — dead-peer detection
-- `crates/desmos-core/src/session/rekey.rs` — rekey scheduling (2^32 pkts or 120 s)
+- `crates/desmos-core/src/session/{mod,manager,keepalive,rekey}.rs`
 
 **Acceptance Criteria:**
-- [ ] `Session<Handshaking>::advance` consumes self and returns `Session<Established>` on success.
-- [ ] `encrypt_data` is only callable on `&Session<Established>` (compile-time verified by a negative test `compile_fail`).
-- [ ] Rekey triggers at 120 s simulated time and produces a fresh key pair.
-- [ ] `SessionTable` insert/lookup/remove work under contention (`proptest`).
+- [ ] `Session<Handshaking>::advance` consumes self and returns `Session<Established>`.
+- [ ] `encrypt_data` only callable on `&Session<Established>` (`compile_fail` test verifies).
+- [ ] Rekey triggers at 120 s simulated time.
+- [ ] `SessionTable` insert/lookup/remove verified by `proptest`.
 
 **Dependencies:** Task 16
 **Effort:** 6-8 hours
@@ -440,58 +398,55 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ### Task 18: Anti-Replay Window
 
-**Implement the 128-bit sliding anti-replay window.**
+**128-bit sliding window.**
 
 **Files to create:**
 - `crates/desmos-proto/src/antireplay.rs`
 - `crates/desmos-proto/tests/antireplay.rs`
 
 **Acceptance Criteria:**
-- [ ] Accepts in-order sequences.
-- [ ] Accepts out-of-order within window.
-- [ ] Rejects duplicates.
-- [ ] Rejects out-of-window old packets.
-- [ ] `proptest` verifies no false accepts across 10k random sequence streams.
+- [ ] Accepts in-order and out-of-order within window.
+- [ ] Rejects duplicates and out-of-window.
+- [ ] `proptest`: no false accepts across 10k random streams.
 
 **Dependencies:** Task 7
 **Effort:** 3-4 hours
-**Refs:** IMPLEMENTATION.md §10.1, PRD §10
+**Refs:** IMPLEMENTATION.md §10.1
 
 ---
 
 ### Task 19: Encrypted Pipeline Integration
 
-**Replace the plaintext pipeline from Task 14 with full encrypted packet flow.**
+**Replace plaintext pipeline with full encrypted flow.**
 
 **Files to modify:**
-- `crates/desmos-core/src/pipeline/outbound.rs`
-- `crates/desmos-core/src/pipeline/inbound.rs`
+- `crates/desmos-core/src/pipeline/{outbound,inbound}.rs`
 - `tests/e2e/encrypted_loopback.rs`
 
 **Acceptance Criteria:**
-- [ ] Handshake completes in < 5 ms localhost.
-- [ ] `iperf3` through the tunnel achieves > 500 Mbps single-core (baseline, no bonding).
-- [ ] Anti-replay window rejects replayed packets.
-- [ ] Tamper with AEAD tag drops the packet and increments the error counter.
+- [ ] Handshake completes < 5 ms on localhost.
+- [ ] `iperf3` single-interface throughput > 500 Mbps.
+- [ ] Anti-replay rejects replayed packets.
+- [ ] Tag tamper drops + increments error counter.
 
 **Dependencies:** Task 14, Task 17, Task 18
 **Effort:** 4-5 hours
-**Refs:** IMPLEMENTATION.md §2.5, PRD §12 Phase 2
+**Refs:** IMPLEMENTATION.md §2.5
 
 ---
 
 ### Task 20: Network Interface Discovery
 
-**Enumerate and monitor host network interfaces.**
+**Enumerate and monitor host interfaces.**
 
 **Files to create:**
-- `crates/desmos-core/src/net/iface.rs` — `NetworkInterface` type + `list()` + `watch()` for link state changes
+- `crates/desmos-core/src/net/iface.rs`
 - `crates/desmos-core/src/net/mod.rs`
 
 **Acceptance Criteria:**
-- [ ] `NetworkInterface::list()` returns every interface on the host with name, MAC, IPs.
-- [ ] `watch()` emits an event when an interface goes up/down (Linux: netlink `RTMGRP_LINK`).
-- [ ] `desmos interfaces` CLI command prints the list as a table.
+- [ ] `list()` returns every interface with name, MAC, IPs.
+- [ ] `watch()` emits events on link up/down via netlink on Linux.
+- [ ] `desmos interfaces` prints a table.
 
 **Dependencies:** Task 5, Task 10
 **Effort:** 4 hours
@@ -499,19 +454,17 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ---
 
-### Task 21: Round-Robin Bonding Strategy
+### Task 21: Round-Robin Bonding Engine
 
-**Implement the first bonding strategy and wire it into the engine.**
+**First bonding strategy + engine orchestrator.**
 
 **Files to create:**
-- `crates/desmos-core/src/bonding/mod.rs` — `BondingEngine` orchestrator
-- `crates/desmos-core/src/bonding/strategy.rs` — `BondingStrategy` trait + `RoundRobin` impl
-- `crates/desmos-core/src/bonding/link.rs` — `Link` struct + `LinkTable`
+- `crates/desmos-core/src/bonding/{mod,strategy,link}.rs`
 
 **Acceptance Criteria:**
-- [ ] `RoundRobin::schedule` returns each link in sequence.
-- [ ] Engine holds an `ArcSwap<dyn BondingStrategy>` and supports hot swap.
-- [ ] Multi-interface loopback test: 2 veth pairs, tunnel rotates packets.
+- [ ] `RoundRobin::schedule` rotates through links.
+- [ ] Engine holds `ArcSwap<dyn BondingStrategy>`, hot-swap safe.
+- [ ] 2-veth test: tunnel rotates packets.
 
 **Dependencies:** Task 19, Task 20
 **Effort:** 5-6 hours
@@ -521,39 +474,39 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ### Task 22: Reorder Buffer
 
-**Implement the out-of-order packet reorder buffer with gap timeout.**
+**Out-of-order reorder buffer with gap timeout.**
 
 **Files to create:**
 - `crates/desmos-core/src/bonding/reorder.rs`
 - `crates/desmos-core/tests/reorder.rs`
 
 **Acceptance Criteria:**
-- [ ] In-order packets pass through with zero added latency.
+- [ ] In-order passes with zero added latency.
 - [ ] Out-of-order within window re-emitted in sequence.
-- [ ] Gap exceeds `reorder_window_ms`: missing packet skipped, marked lost.
-- [ ] Duplicate (same `session+seq`) dropped.
-- [ ] p99 added latency < 1 ms on 100k-packet benchmark (`criterion`).
+- [ ] Gap exceeds window: missing packet skipped + counted lost.
+- [ ] Duplicates dropped.
+- [ ] p99 added latency < 1 ms on 100k-packet `criterion` bench.
 
 **Dependencies:** Task 19
 **Effort:** 5-6 hours
-**Refs:** IMPLEMENTATION.md §2.4, PRD §4.3
+**Refs:** IMPLEMENTATION.md §2.4
 
 ---
 
-### Task 23: Link Quality Probing
+### Task 23: Link Quality Probing + Scoring
 
-**Send and process DWP Probe packets and compute RTT/loss/jitter.**
+**Send Probe packets, compute RTT/loss/jitter, link score.**
 
 **Files to create:**
-- `crates/desmos-core/src/bonding/probe.rs` — probe sender + RTT tracker
-- `crates/desmos-core/src/bonding/score.rs` — link score computation
+- `crates/desmos-core/src/bonding/probe.rs`
+- `crates/desmos-core/src/bonding/score.rs`
 
 **Acceptance Criteria:**
-- [ ] A probe is sent every `probe_interval_ms` (default 500).
-- [ ] RTT EWMA updates on each response.
-- [ ] Rolling loss rate computed over last 100 probes.
-- [ ] Jitter = stdev of RTT over the rolling window.
-- [ ] Score formula implemented exactly per PRD §4.2.
+- [ ] Probe sent every `probe_interval_ms` (default 500).
+- [ ] RTT EWMA updates on response.
+- [ ] Rolling loss over last 100 probes.
+- [ ] Jitter = stdev over rolling window.
+- [ ] Link score formula matches PRD §4.2 exactly.
 
 **Dependencies:** Task 21, Task 11
 **Effort:** 5-6 hours
@@ -561,17 +514,17 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ---
 
-### Task 24: RR Tunnel End-to-End Test
+### Task 24: RR Bonding End-to-End Test
 
-**Verify the RR bonded tunnel works through a 2-interface simulated environment.**
+**Validate bonded tunnel throughput and stability.**
 
 **Files to create:**
-- `tests/e2e/rr_bonding.rs` — 2 veth pairs + `tc` latency on one + `iperf3` roundtrip
+- `tests/e2e/rr_bonding.rs` — 2 veth pairs, `tc` latency + `iperf3`
 
 **Acceptance Criteria:**
-- [ ] Throughput ≥ 1.5 × single-interface baseline with 2 equal links.
-- [ ] No packet reordering issues observed (packet loss < 0.1%).
-- [ ] Test can be run in CI on Linux runners.
+- [ ] Throughput ≥ 1.5× single-interface baseline with equal links.
+- [ ] Packet loss < 0.1%.
+- [ ] Runs in Linux CI.
 
 **Dependencies:** Task 21, Task 22
 **Effort:** 3-4 hours
@@ -581,19 +534,19 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ## Phase 3: Advanced Bonding & Failover
 
-> Matches PRD §12 Phase 3. After this phase: all 4 strategies work, interface failover is sub-second, anti-replay is hardened, MTU discovery is automatic.
+> Matches PRD §12 Phase 3.
 
 ### Task 25: Weighted and Latency-Adaptive Strategies
 
-**Add the two remaining weighted scheduling strategies.**
+**Add the two weighted scheduling strategies.**
 
 **Files to modify:**
-- `crates/desmos-core/src/bonding/strategy.rs` — add `Weighted` and `LatencyAdaptive`
+- `crates/desmos-core/src/bonding/strategy.rs`
 
 **Acceptance Criteria:**
-- [ ] `Weighted::schedule` produces a distribution matching configured weights (χ² test over 10k packets).
-- [ ] `LatencyAdaptive::schedule` recomputes weights from link scores on every probe cycle.
-- [ ] Hot swap from RR to LatencyAdaptive under load drops zero packets.
+- [ ] `Weighted` distribution matches configured weights (χ² over 10k packets).
+- [ ] `LatencyAdaptive` recomputes weights on every probe cycle.
+- [ ] Hot swap under load drops zero packets.
 
 **Dependencies:** Task 21, Task 23
 **Effort:** 5 hours
@@ -603,16 +556,16 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ### Task 26: Redundant Strategy
 
-**Implement the ultra-reliability strategy that sends every packet on every healthy link.**
+**Send every packet on every healthy link.**
 
 **Files to modify:**
-- `crates/desmos-core/src/bonding/strategy.rs` — add `Redundant`
-- `crates/desmos-core/src/pipeline/outbound.rs` — handle `LinkSelection::All`
+- `crates/desmos-core/src/bonding/strategy.rs`
+- `crates/desmos-core/src/pipeline/outbound.rs`
 
 **Acceptance Criteria:**
-- [ ] With 3 links, a single packet is transmitted 3 times.
-- [ ] The inbound reorder buffer deduplicates correctly (Task 22 still passes).
-- [ ] Throughput equal to slowest link.
+- [ ] 3 links → every packet transmitted 3×.
+- [ ] Reorder buffer deduplicates correctly.
+- [ ] Throughput = slowest link (expected).
 
 **Dependencies:** Task 25, Task 22
 **Effort:** 3 hours
@@ -620,7 +573,7 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ---
 
-### Task 27: Link State Machine and Failover Controller
+### Task 27: Link State Machine + Failover Controller
 
 **Explicit state machine for link health transitions.**
 
@@ -629,48 +582,48 @@ cargo clippy --workspace --all-targets -- -D warnings
 - `crates/desmos-core/tests/link_state.rs`
 
 **Acceptance Criteria:**
-- [ ] State transitions match PRD §4.4 and SPECIFICATION.md §3.2.4.
-- [ ] Failover redistribution happens within 1 s of dead detection in simulation.
-- [ ] Probation: recovered interface is reintegrated after 10 s at reduced weight.
+- [ ] Transitions match PRD §4.4 exactly.
+- [ ] Failover redistribution within 1 s of dead detection.
+- [ ] Probation reintegrates recovered interface after 10 s at reduced weight.
 
 **Dependencies:** Task 23
 **Effort:** 4-5 hours
-**Refs:** IMPLEMENTATION.md §2.4, §2.9
+**Refs:** IMPLEMENTATION.md §2.4
 
 ---
 
-### Task 28: PMTUD and DWP Fragmentation
+### Task 28: PMTUD + DWP Fragmentation
 
-**Implement Path MTU Discovery and in-protocol fragmentation for oversized payloads.**
+**Path MTU Discovery and in-protocol fragmentation.**
 
 **Files to create/modify:**
 - `crates/desmos-proto/src/wire.rs` — `FRAG` flag handling
-- `crates/desmos-core/src/net/pmtud.rs` — per-link MTU probe
-- `crates/desmos-core/src/pipeline/outbound.rs` — fragment on MTU exceed
+- `crates/desmos-core/src/net/pmtud.rs`
+- `crates/desmos-core/src/pipeline/outbound.rs`
 
 **Acceptance Criteria:**
 - [ ] Fragment + reassemble roundtrip for payloads up to 4× tunnel MTU.
-- [ ] PMTUD converges on the correct MTU within 3 s per link.
-- [ ] Fallback MTU 1280 when discovery fails.
+- [ ] PMTUD converges within 3 s per link.
+- [ ] Fallback MTU 1280 on discovery failure.
 
 **Dependencies:** Task 25
 **Effort:** 6 hours
-**Refs:** PRD §3.3, §12 Phase 3
+**Refs:** PRD §3.3
 
 ---
 
 ### Task 29: Failover End-to-End Test
 
-**Simulate interface failure during bulk transfer and verify failover meets targets.**
+**Validate failover under bulk transfer.**
 
 **Files to create:**
 - `tests/e2e/failover.rs`
 
 **Acceptance Criteria:**
 - [ ] 3-interface tunnel under `iperf3` load.
-- [ ] Kill one interface mid-transfer; connection stays up.
-- [ ] Throughput drop limited to the failed link's share.
-- [ ] Failover completes in < 1 s end-to-end.
+- [ ] Kill one mid-transfer → tunnel stays up.
+- [ ] Throughput drop limited to failed-link share.
+- [ ] Failover end-to-end < 1 s.
 
 **Dependencies:** Task 27, Task 25
 **Effort:** 4 hours
@@ -680,21 +633,20 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ## Phase 4: Server Mode
 
-> Matches PRD §12 Phase 4. After this phase: a multi-client server works on Linux with all 4 auth methods and NAT masquerade.
+> Matches PRD §12 Phase 4.
 
 ### Task 30: Multi-Client Server Listener
 
-**Accept multiple concurrent client handshakes on a single UDP listener.**
+**Accept concurrent client handshakes on one UDP listener.**
 
 **Files to create:**
-- `crates/desmos-core/src/server/mod.rs` — `ServerListener`
-- `crates/desmos-core/src/server/clients.rs` — client table
+- `crates/desmos-core/src/server/{mod,clients}.rs`
 - `crates/desmos-cli/src/commands/up.rs` — `--mode server` branch
 
 **Acceptance Criteria:**
-- [ ] Two clients can connect simultaneously to the same server.
-- [ ] Each client gets a distinct `SessionId`.
+- [ ] Two clients connect simultaneously with distinct `SessionId`.
 - [ ] Server exits cleanly on `desmos down`.
+- [ ] `max_clients` enforced.
 
 **Dependencies:** Task 19, Task 17
 **Effort:** 5-6 hours
@@ -707,12 +659,12 @@ cargo clippy --workspace --all-targets -- -D warnings
 **Install and remove iptables NAT rules for server-side egress.**
 
 **Files to create:**
-- `crates/desmos-core/src/server/nat.rs` — Linux iptables wrapper via `std::process::Command` (or native netlink if feasible; iptables shell-out is pragmatic)
+- `crates/desmos-core/src/server/nat.rs` — Linux iptables wrapper via `std::process::Command`
 
 **Acceptance Criteria:**
-- [ ] Server start installs `POSTROUTING MASQUERADE` + `FORWARD ACCEPT`.
-- [ ] Server stop removes exactly the rules it installed.
-- [ ] Test with `iperf3` from client to an external target through the server.
+- [ ] Start installs `POSTROUTING MASQUERADE` + `FORWARD ACCEPT`.
+- [ ] Stop removes exactly the installed rules.
+- [ ] `iperf3` through server to external target works.
 
 **Dependencies:** Task 30
 **Effort:** 4 hours
@@ -722,17 +674,15 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ### Task 32: PSK and Public-Key Authenticators
 
-**First two auth backends integrated with the Noise IK handshake.**
+**First two auth backends.**
 
 **Files to create:**
-- `crates/desmos-core/src/auth/mod.rs` — `Authenticator` trait
-- `crates/desmos-core/src/auth/psk.rs`
-- `crates/desmos-core/src/auth/pubkey.rs` — reads `/etc/desmos/authorized_keys`
+- `crates/desmos-core/src/auth/{mod,psk,pubkey}.rs`
 
 **Acceptance Criteria:**
 - [ ] PSK mismatch rejects handshake.
 - [ ] Unauthorized public key rejected.
-- [ ] Valid key grants a session.
+- [ ] Valid key grants session.
 
 **Dependencies:** Task 30, Task 16
 **Effort:** 4 hours
@@ -740,25 +690,45 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ---
 
-### Task 33: TOTP and mTLS Authenticators
+### Task 33: TOTP Authenticator
 
-**Remaining two auth backends.**
+**RFC 6238 TOTP backend.**
 
 **Files to create:**
-- `crates/desmos-core/src/auth/totp.rs` — RFC 6238, hand-rolled HMAC-SHA1 via `ring`
-- `crates/desmos-core/src/auth/mtls.rs` — minimal TLS 1.3 client-cert verification
+- `crates/desmos-core/src/auth/totp.rs` — hand-rolled HMAC-SHA1 via `ring`
+- `crates/desmos-core/tests/auth_totp.rs`
 
 **Acceptance Criteria:**
-- [ ] TOTP accepts ±1 period, rejects replay within the same period.
-- [ ] mTLS rejects expired or revoked certs.
+- [ ] Accepts codes within ±1 period (default 30 s).
+- [ ] Rejects replay within the same period.
+- [ ] Matches RFC 6238 Appendix B test vectors.
 
 **Dependencies:** Task 32
-**Effort:** 8 hours
+**Effort:** 4 hours
 **Refs:** SPECIFICATION.md §3.3
 
 ---
 
-### Task 34: Rate Limiting and Handshake Cookies
+### Task 34: mTLS Authenticator
+
+**Minimal TLS 1.3 client-cert verification for mTLS auth.**
+
+**Files to create:**
+- `crates/desmos-core/src/auth/mtls.rs` — uses `ring` for signature verification + CA chain walking
+
+**Acceptance Criteria:**
+- [ ] Accepts certs signed by configured CA.
+- [ ] Rejects expired / future-dated certs.
+- [ ] Rejects revoked certs from the CRL file.
+- [ ] CN mapped to session identity.
+
+**Dependencies:** Task 33
+**Effort:** 6-8 hours
+**Refs:** SPECIFICATION.md §3.3
+
+---
+
+### Task 35: Rate Limiting + Handshake Cookies
 
 **Per-source token bucket and anti-amplification cookie.**
 
@@ -767,30 +737,28 @@ cargo clippy --workspace --all-targets -- -D warnings
 - `crates/desmos-proto/src/handshake/cookie.rs`
 
 **Acceptance Criteria:**
-- [ ] Handshake bucket: 5 tokens, refill 0.5/s per IP.
-- [ ] 6th handshake within 10 s from same IP rejected.
-- [ ] Cookie blocks amplification: server does not reply with large data until client echoes a valid cookie.
+- [ ] 5 tokens / 10 s refill per source IP; 6th rejected.
+- [ ] Cookie blocks amplification until echoed.
 
 **Dependencies:** Task 30
 **Effort:** 4-5 hours
-**Refs:** SPECIFICATION.md §6.4, §8
+**Refs:** SPECIFICATION.md §6.4
 
 ---
 
-### Task 35: Server CLI Commands
+### Task 36: Server CLI Commands
 
-**Implement `desmos clients`, `desmos clients kick <id>`, `desmos stats`.**
+**`desmos clients`, `desmos clients kick`, `desmos stats`.**
 
 **Files to modify:**
-- `crates/desmos-cli/src/commands/clients.rs`
-- `crates/desmos-cli/src/commands/stats.rs`
+- `crates/desmos-cli/src/commands/{clients,stats}.rs`
 
 **Acceptance Criteria:**
 - [ ] `desmos clients` prints a table.
-- [ ] `desmos clients kick <id>` disconnects the target session.
+- [ ] Kick disconnects the session.
 - [ ] All commands support `--json`.
 
-**Dependencies:** Task 30-34
+**Dependencies:** Task 30-35
 **Effort:** 3 hours
 **Refs:** SPECIFICATION.md §3.4
 
@@ -798,14 +766,14 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ## Phase 5: P2P and NAT Traversal
 
-> Matches PRD §12 Phase 5. After this phase: two peers behind NAT can establish a direct tunnel.
+> Matches PRD §12 Phase 5.
 
-### Task 36: STUN Client
+### Task 37: STUN Client
 
-**Implement a minimal STUN client for public-address discovery.**
+**RFC 5389 subset for public-address discovery.**
 
 **Files to create:**
-- `crates/desmos-core/src/net/stun.rs` — RFC 5389 subset (Binding Request/Response, XOR-MAPPED-ADDRESS)
+- `crates/desmos-core/src/net/stun.rs`
 
 **Acceptance Criteria:**
 - [ ] Query `stun.l.google.com:19302` returns the host's public IP.
@@ -817,37 +785,36 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ---
 
-### Task 37: UDP Hole Punching
+### Task 38: UDP Hole Punching
 
-**Establish bidirectional UDP flow through symmetric NATs using simultaneous open.**
+**Establish bidirectional UDP flow through NATs.**
 
 **Files to create:**
-- `crates/desmos-core/src/p2p/mod.rs`
-- `crates/desmos-core/src/p2p/holepunch.rs`
+- `crates/desmos-core/src/p2p/{mod,holepunch}.rs`
 
 **Acceptance Criteria:**
-- [ ] Two peers with STUN-discovered public addresses successfully exchange DWP data without a relay on cone NATs.
-- [ ] Fallback path exists for symmetric NATs (try multiple src ports).
+- [ ] Two peers with STUN-discovered addresses exchange DWP data over cone NATs.
+- [ ] Symmetric-NAT fallback tries multiple src ports.
 
-**Dependencies:** Task 36
+**Dependencies:** Task 37
 **Effort:** 6-8 hours
 **Refs:** SPECIFICATION.md §3.6.1
 
 ---
 
-### Task 38: Relay Fallback
+### Task 39: Relay Fallback
 
-**When direct P2P fails, route through any reachable Desmos server acting as relay.**
+**Route through a Desmos server when direct P2P fails.**
 
 **Files to create:**
 - `crates/desmos-core/src/p2p/relay.rs`
 
 **Acceptance Criteria:**
-- [ ] Failed hole-punch triggers a relay attempt within 3 s.
-- [ ] Relay server forwards packets between the two peers transparently.
-- [ ] Config `[p2p].relay_servers` accepts a list.
+- [ ] Hole-punch failure triggers relay within 3 s.
+- [ ] Relay forwards packets between peers transparently.
+- [ ] `[p2p].relay_servers` list honored.
 
-**Dependencies:** Task 37, Task 30
+**Dependencies:** Task 38, Task 30
 **Effort:** 5 hours
 **Refs:** SPECIFICATION.md §3.6.1
 
@@ -855,110 +822,161 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 ## Phase 6: Cross-Platform
 
-> Matches PRD §12 Phase 6. After this phase: the binary builds, runs, and passes integration tests on all 6 platforms. Privilege drop and sandboxing are in place.
+> Matches PRD §12 Phase 6.
 
-### Task 39: macOS utun + kqueue Backend
+### Task 40: BSD kqueue Reactor
 
-**Implement macOS TUN device and kqueue event loop.**
+**Shared BSD kqueue backend (used by macOS and FreeBSD).**
 
 **Files to create:**
-- `crates/desmos-rt/src/bsd/mod.rs`
-- `crates/desmos-rt/src/bsd/reactor.rs` — kqueue backend
-- `crates/desmos-rt/src/bsd/macos_tun.rs` — utun via `PF_SYSTEM`
-- `.github/workflows/ci.yml` — macOS job runs `tun_macos` integration test
+- `crates/desmos-rt/src/bsd/{mod,reactor}.rs` — `kqueue()` + `kevent()`
 
 **Acceptance Criteria:**
-- [ ] All Phase 1-3 tests pass on macOS.
-- [ ] `iperf3` tunnel throughput ≥ 500 Mbps single core on an M1.
+- [ ] Register UDP socket + TUN fd → events delivered.
+- [ ] 1000 register/deregister cycles → no leaks.
+- [ ] Unit tests pass on macOS and FreeBSD runners.
 
-**Dependencies:** Task 10-14, Task 19
-**Effort:** 8-10 hours
-**Refs:** PRD §5.1
+**Dependencies:** Task 10 (trait), Task 9 (rings)
+**Effort:** 5-6 hours
+**Refs:** IMPLEMENTATION.md §2.1
 
 ---
 
-### Task 40: Windows Wintun + IOCP Backend
+### Task 41: macOS utun TUN Backend
 
-**Implement Windows TUN via `wintun` crate and IOCP event loop.**
-
-**Files to create:**
-- `crates/desmos-rt/src/windows/mod.rs`
-- `crates/desmos-rt/src/windows/reactor.rs` — IOCP
-- `crates/desmos-rt/src/windows/tun.rs` — wintun wrapper
-
-**Acceptance Criteria:**
-- [ ] All Phase 1-3 tests pass on Windows.
-- [ ] Binary links statically against `wintun.dll` at runtime from a bundled path.
-
-**Dependencies:** Task 10-14, Task 19
-**Effort:** 10-12 hours
-**Refs:** PRD §5.1
-
----
-
-### Task 41: FreeBSD `/dev/tunN` Backend
-
-**Implement FreeBSD TUN device and reuse the BSD kqueue backend from Task 39.**
+**macOS utun device via `PF_SYSTEM`.**
 
 **Files to create:**
-- `crates/desmos-rt/src/bsd/freebsd_tun.rs`
+- `crates/desmos-rt/src/bsd/macos_tun.rs`
 
 **Acceptance Criteria:**
-- [ ] FreeBSD 13 CI job passes Phase 1-3 tests in QEMU.
-- [ ] Privilege drop via `pledge` + `unveil` works.
+- [ ] `MacosTun::create()` returns a usable device.
+- [ ] Phase 1-3 tests pass on macOS.
+- [ ] `iperf3` ≥ 500 Mbps single core on an M1.
 
-**Dependencies:** Task 39
+**Dependencies:** Task 40
 **Effort:** 5-6 hours
 **Refs:** PRD §5.1
 
 ---
 
-### Task 42: Privilege Drop and Sandboxing
+### Task 42: Windows IOCP Reactor
+
+**Windows IOCP event loop behind the `Reactor` trait.**
+
+**Files to create:**
+- `crates/desmos-rt/src/windows/{mod,reactor}.rs` — `CreateIoCompletionPort`, `GetQueuedCompletionStatus`
+
+**Acceptance Criteria:**
+- [ ] Register UDP socket → events delivered.
+- [ ] Proper overlapped I/O handling (completion on write + read).
+- [ ] Unit tests pass on `windows-latest`.
+
+**Dependencies:** Task 10 (trait)
+**Effort:** 6-8 hours
+**Refs:** IMPLEMENTATION.md §2.1
+
+---
+
+### Task 43: Windows Wintun TUN Backend
+
+**Windows TUN via the `wintun` crate.**
+
+**Files to create:**
+- `crates/desmos-rt/src/windows/tun.rs`
+
+**Acceptance Criteria:**
+- [ ] Create/drop TUN device via Wintun session API.
+- [ ] Phase 1-3 tests pass on Windows.
+- [ ] Binary locates `wintun.dll` from a bundled path.
+
+**Dependencies:** Task 42
+**Effort:** 5-6 hours
+**Refs:** PRD §5.1
+
+---
+
+### Task 44: FreeBSD `/dev/tunN` Backend
+
+**FreeBSD TUN reusing the BSD kqueue backend.**
+
+**Files to create:**
+- `crates/desmos-rt/src/bsd/freebsd_tun.rs`
+
+**Acceptance Criteria:**
+- [ ] FreeBSD 13 CI job (QEMU) passes Phase 1-3 tests.
+- [ ] `iperf3` roundtrip works.
+
+**Dependencies:** Task 40
+**Effort:** 4-5 hours
+**Refs:** PRD §5.1
+
+---
+
+### Task 45: Privilege Drop + Sandboxing
 
 **Typestate privilege gate + per-platform sandbox init.**
 
 **Files to create:**
-- `crates/desmos-rt/src/priv_drop/mod.rs`
-- `crates/desmos-rt/src/priv_drop/linux.rs` — `setresuid` + seccomp-bpf filter
-- `crates/desmos-rt/src/priv_drop/freebsd.rs` — `pledge` + `unveil`
-- `crates/desmos-rt/src/priv_drop/macos.rs` — sandbox profile
+- `crates/desmos-rt/src/priv_drop/{mod,linux,freebsd,macos}.rs`
 
 **Acceptance Criteria:**
-- [ ] `Privileged::drop_privileges()` consumes `self` and returns `Unprivileged`.
-- [ ] Post-drop process cannot open new TUN devices (seccomp denies).
-- [ ] Audit log records the drop event.
+- [ ] `Privileged::drop_privileges()` consumes self and returns `Unprivileged`.
+- [ ] Post-drop cannot open new TUN devices (seccomp denies on Linux).
+- [ ] Audit log records the drop.
+- [ ] FreeBSD: `pledge` + `unveil` applied.
+- [ ] macOS: sandbox profile initialized.
 
-**Dependencies:** Task 39-41
+**Dependencies:** Task 41, Task 43, Task 44
 **Effort:** 8 hours
-**Refs:** IMPLEMENTATION.md §2.3, SPECIFICATION.md §11.1
+**Refs:** IMPLEMENTATION.md §2.3
 
 ---
 
-### Task 43: OpenWrt Cross-Compile and Packaging
+### Task 46: OpenWrt Cross-Compile + IPK
 
-**Cross-compile for ARM/MIPS, build an IPK package, write UCI integration.**
+**Cross-compile for MIPS/ARM OpenWrt targets and produce an IPK.**
 
 **Files to create:**
 - `packaging/openwrt/Makefile`
-- `packaging/openwrt/files/etc/config/desmos`
-- `packaging/openwrt/files/etc/init.d/desmos`
-- `packaging/openwrt/luci/` — `luci-app-desmos`
 - `.github/workflows/openwrt.yml`
+- `scripts/build-openwrt.sh`
 
 **Acceptance Criteria:**
-- [ ] `make package/desmos/compile` in an OpenWrt SDK produces an IPK.
-- [ ] UCI config `/etc/config/desmos` is parsed by a shim that emits `desmos.toml`.
-- [ ] init.d script starts/stops the daemon via procd.
+- [ ] `make package/desmos/compile` in an OpenWrt SDK produces an IPK for `mips_24kc`, `arm_cortex-a7`, `aarch64_cortex-a53`.
+- [ ] IPK installs via `opkg install` on a test image.
 
-**Dependencies:** Task 42
-**Effort:** 10-12 hours
+**Dependencies:** Task 45
+**Effort:** 6-8 hours
 **Refs:** PRD §5.3
 
 ---
 
-### Task 44: pfSense Packaging
+### Task 47: OpenWrt UCI + init.d + LuCI App
 
-**Build a FreeBSD pkg for pfSense with GUI integration stub.**
+**UCI config bridge, procd init script, LuCI web config.**
+
+**Files to create:**
+- `packaging/openwrt/files/etc/config/desmos`
+- `packaging/openwrt/files/etc/init.d/desmos`
+- `packaging/openwrt/luci/luasrc/controller/desmos.lua`
+- `packaging/openwrt/luci/luasrc/model/cbi/desmos.lua`
+- `packaging/openwrt/luci/luasrc/view/desmos/*.htm`
+
+**Acceptance Criteria:**
+- [ ] UCI config parsed by a shim that emits `desmos.toml`.
+- [ ] `service desmos start|stop|restart` works via procd.
+- [ ] LuCI app page at `/cgi-bin/luci/admin/services/desmos` loads and saves config.
+
+**Dependencies:** Task 46
+**Effort:** 6-8 hours
+**Refs:** PRD §5.3
+
+---
+
+### Task 48: pfSense Packaging
+
+**FreeBSD pkg with pfSense GUI manifest.**
 
 **Files to create:**
 - `packaging/pfsense/pkg-plist.xml`
@@ -969,64 +987,81 @@ cargo clippy --workspace --all-targets -- -D warnings
 - [ ] `pkg add desmos-1.0.0.pkg` installs on pfSense 2.7+.
 - [ ] Service appears under Services menu.
 
-**Dependencies:** Task 41
+**Dependencies:** Task 44
 **Effort:** 6-8 hours
 **Refs:** PRD §5.4
 
 ---
 
-### Task 45: Windows Service Wrapper
+### Task 49: Windows Service Wrapper + MSI
 
 **Install, start, stop Desmos as a Windows Service via MSI.**
 
 **Files to create:**
-- `packaging/windows/service/` — service main loop wrapper
-- `packaging/windows/wix/` — WiX MSI sources
-- `.github/workflows/release.yml` — MSI build step
+- `packaging/windows/service/src/service_main.rs` — service main loop wrapper
+- `packaging/windows/wix/desmos.wxs` — WiX MSI source
+- `.github/workflows/release.yml` — MSI build step (skeleton; full wiring in Task 68)
 
 **Acceptance Criteria:**
-- [ ] MSI installs, registers the service, sets `LocalSystem`, auto-start.
-- [ ] `sc query Desmos` returns `RUNNING` after install.
-- [ ] Uninstall removes the service and files.
+- [ ] MSI installs, registers the service as `LocalSystem`, auto-start.
+- [ ] `sc query Desmos` reports `RUNNING`.
+- [ ] Uninstall removes service and files.
 
-**Dependencies:** Task 40
+**Dependencies:** Task 43
 **Effort:** 8 hours
-**Refs:** SPECIFICATION.md §11.4
+**Refs:** SPECIFICATION.md §11.4 (Windows Service decision)
 
 ---
 
 ## Phase 7: Web UI and Polish
 
-> Matches PRD §12 Phase 7. After this phase: full Web UI, dual-format stats, hot-reload, docs, benchmarks, release-ready.
+> Matches PRD §12 Phase 7.
 
-### Task 46: Hand-Rolled HTTP/1.1 Server
+### Task 50: HTTP Server Core (Server + Request + Response)
 
-**Implement the bare HTTP/1.1 server in `desmos-http`.**
+**Hand-rolled HTTP/1.1 server skeleton.**
 
 **Files to create:**
-- `crates/desmos-http/src/server.rs`
-- `crates/desmos-http/src/request.rs`
-- `crates/desmos-http/src/response.rs`
+- `crates/desmos-http/src/server.rs` — listener + connection loop integrated with reactor
+- `crates/desmos-http/src/request.rs` — zero-alloc header parser, body reader
+- `crates/desmos-http/src/response.rs` — response builder
 - `crates/desmos-http/src/method.rs`
-- `crates/desmos-http/src/headers.rs`
-- `crates/desmos-http/src/router.rs`
+- `crates/desmos-http/src/headers.rs` — typed header wrappers
 - `crates/desmos-http/src/errors.rs`
 
 **Acceptance Criteria:**
-- [ ] Serves `GET /` with a static body.
-- [ ] Parses chunked request bodies up to 1 MB.
-- [ ] Router matches path + method.
-- [ ] Handles 100 concurrent connections on a single thread via the reactor.
+- [ ] Serves a static `GET /` with a 200 response.
+- [ ] Parses up to 1 MB request bodies (chunked and content-length).
+- [ ] 100 concurrent connections handled on a single thread.
 
 **Dependencies:** Task 10
-**Effort:** 8-10 hours
-**Refs:** IMPLEMENTATION.md §3.1 (`desmos-http`)
+**Effort:** 6 hours
+**Refs:** IMPLEMENTATION.md §3.1
 
 ---
 
-### Task 47: JSON Codec
+### Task 51: HTTP Router + Middleware Chain
 
-**Hand-rolled JSON encoder and decoder for a constrained subset.**
+**Path + method routing with a chain-of-responsibility middleware.**
+
+**Files to create:**
+- `crates/desmos-http/src/router.rs`
+- `crates/desmos-http/src/middleware.rs`
+
+**Acceptance Criteria:**
+- [ ] Exact-match and `:param` routes supported.
+- [ ] Middleware chain runs before handlers and can short-circuit.
+- [ ] 404 for unmatched routes.
+
+**Dependencies:** Task 50
+**Effort:** 4-5 hours
+**Refs:** IMPLEMENTATION.md §5.1
+
+---
+
+### Task 52: JSON Codec
+
+**Hand-rolled JSON encoder/decoder for a constrained subset.**
 
 **Files to create:**
 - `crates/desmos-http/src/json.rs`
@@ -1035,38 +1070,36 @@ cargo clippy --workspace --all-targets -- -D warnings
 **Acceptance Criteria:**
 - [ ] Encode/decode roundtrip for numbers, strings, booleans, arrays, objects.
 - [ ] Depth limit 32 enforced.
-- [ ] Rejects NaN and Infinity in numbers.
-- [ ] `proptest` verifies roundtrip for 1000 random trees.
+- [ ] Rejects NaN and Infinity.
+- [ ] `proptest` roundtrip over 1000 random trees.
 
-**Dependencies:** Task 46
+**Dependencies:** Task 50
 **Effort:** 6 hours
 **Refs:** IMPLEMENTATION.md §5.2
 
 ---
 
-### Task 48: WebSocket Support
+### Task 53: WebSocket Support
 
-**Implement RFC 6455 upgrade and framing.**
+**RFC 6455 upgrade + framing.**
 
 **Files to create:**
-- `crates/desmos-http/src/websocket/mod.rs`
-- `crates/desmos-http/src/websocket/handshake.rs`
-- `crates/desmos-http/src/websocket/frame.rs`
+- `crates/desmos-http/src/websocket/{mod,handshake,frame}.rs`
 
 **Acceptance Criteria:**
-- [ ] `GET /ws` with correct upgrade headers returns a 101 and transitions to WS framing.
+- [ ] Upgrade handshake returns 101 on valid headers.
 - [ ] Text and binary frames roundtrip.
-- [ ] Server sends pings, receives pongs, closes on idle > 60 s.
+- [ ] Ping/pong; server closes on > 60 s idle.
 
-**Dependencies:** Task 46
+**Dependencies:** Task 51
 **Effort:** 8 hours
 **Refs:** SPECIFICATION.md §6.2
 
 ---
 
-### Task 49: Basic Auth + Argon2 Verification
+### Task 54: Basic Auth + Argon2 Verification
 
-**Gate all `/api/v1/*` endpoints behind HTTP Basic + Argon2id.**
+**Gate `/api/v1/*` behind HTTP Basic + Argon2id.**
 
 **Files to create:**
 - `crates/desmos-http/src/basic_auth.rs`
@@ -1076,36 +1109,55 @@ cargo clippy --workspace --all-targets -- -D warnings
 - [ ] Valid credentials pass through.
 - [ ] Invalid credentials return 401 + `WWW-Authenticate`.
 - [ ] `/api/v1/health` stays public.
-- [ ] Constant-time comparison via `argon2::verify_encoded`.
+- [ ] Constant-time verification via `argon2::verify_encoded`.
 
-**Dependencies:** Task 46
+**Dependencies:** Task 51
 **Effort:** 3 hours
 **Refs:** IMPLEMENTATION.md §5.4
 
 ---
 
-### Task 50: REST Handlers and DTOs
+### Task 55: REST Read Endpoints
 
-**Implement every endpoint from IMPLEMENTATION.md §5.1.**
+**All `GET` endpoints from IMPLEMENTATION.md §5.1.**
 
 **Files to create:**
 - `crates/desmos-webui/src/routes.rs`
 - `crates/desmos-webui/src/dto.rs`
-- `crates/desmos-webui/src/handlers/{status,interfaces,bonding,stats,clients,config,logs,ws,health}.rs`
+- `crates/desmos-webui/src/handlers/{status,interfaces,bonding,stats,clients,config,logs,health,mod}.rs` — GET handlers only
 
 **Acceptance Criteria:**
-- [ ] Each endpoint in IMPLEMENTATION.md §5.1 returns the documented JSON shape on a running server.
+- [ ] `GET /api/v1/status`, `/interfaces`, `/bonding`, `/stats`, `/clients`, `/config`, `/logs`, `/health` return the documented JSON shapes.
 - [ ] `GET /api/v1/config` redacts secrets.
-- [ ] `PUT /api/v1/config` hot-reloads successfully for reload-safe fields.
-- [ ] `PUT /api/v1/bonding/strategy` hot-switches strategies.
+- [ ] All endpoints behind Basic Auth except `/health`.
 
-**Dependencies:** Task 46-49, Task 25, Task 27
-**Effort:** 8-10 hours
-**Refs:** IMPLEMENTATION.md §5, SPECIFICATION.md §6.2
+**Dependencies:** Task 50-54, Task 25, Task 27
+**Effort:** 6 hours
+**Refs:** IMPLEMENTATION.md §5
 
 ---
 
-### Task 51: Dual-Format Prometheus Stats
+### Task 56: REST Write + Hot-Reload Endpoints
+
+**All `PUT` / `DELETE` endpoints with config hot-reload.**
+
+**Files to create/modify:**
+- `crates/desmos-webui/src/handlers/{interfaces,bonding,config,clients}.rs` — PUT/DELETE handlers
+- `crates/desmos-core/src/config/diff.rs` — hot-reload diff logic
+
+**Acceptance Criteria:**
+- [ ] `PUT /api/v1/interfaces/:name` enables/disables/reweights.
+- [ ] `PUT /api/v1/bonding/strategy` hot-switches strategies with zero packet loss.
+- [ ] `PUT /api/v1/config` hot-reloads reload-safe fields and rejects unsafe changes with a typed error.
+- [ ] `DELETE /api/v1/clients/:session_id` kicks.
+
+**Dependencies:** Task 55
+**Effort:** 6 hours
+**Refs:** IMPLEMENTATION.md §5, SPECIFICATION.md §3.5.6
+
+---
+
+### Task 57: Dual-Format Prometheus Stats
 
 **Add Prometheus text-format output to `/api/v1/stats`.**
 
@@ -1114,19 +1166,38 @@ cargo clippy --workspace --all-targets -- -D warnings
 
 **Acceptance Criteria:**
 - [ ] `GET /api/v1/stats` returns JSON by default.
-- [ ] `GET /api/v1/stats?format=prometheus` returns valid Prometheus text.
-- [ ] `GET /api/v1/stats` with `Accept: text/plain; version=0.0.4` returns Prometheus text.
-- [ ] Output includes counters for bytes/packets/errors and gauges for RTT/loss/jitter per interface.
+- [ ] `?format=prometheus` returns Prometheus text.
+- [ ] `Accept: text/plain; version=0.0.4` returns Prometheus text.
+- [ ] Output: counters (bytes/packets/errors) + gauges (RTT/loss/jitter) per interface.
 
-**Dependencies:** Task 50
-**Effort:** 4 hours
-**Refs:** SPECIFICATION.md §6.2 (resolved decision)
+**Dependencies:** Task 55
+**Effort:** 3 hours
+**Refs:** SPECIFICATION.md §6.2
 
 ---
 
-### Task 52: React Frontend Scaffolding
+### Task 58: WebSocket Stats + Logs Endpoints
 
-**Set up the Vite + React + TypeScript project and `build.rs` integration.**
+**`/api/v1/ws/stats` and `/api/v1/ws/logs` live streams.**
+
+**Files to create:**
+- `crates/desmos-webui/src/handlers/ws.rs`
+- `crates/desmos-core/src/broadcast.rs` — `Broadcast<T>` ring
+
+**Acceptance Criteria:**
+- [ ] `ws/stats` emits JSON snapshots at ≥ 2 Hz.
+- [ ] `ws/logs` emits new log entries as they occur, filtered by `?level=`.
+- [ ] Multiple subscribers share the bus without blocking publishers.
+
+**Dependencies:** Task 53, Task 55
+**Effort:** 4-5 hours
+**Refs:** IMPLEMENTATION.md §2.7
+
+---
+
+### Task 59: Vite + React + TypeScript Scaffolding
+
+**Set up the frontend project.**
 
 **Files to create:**
 - `crates/desmos-webui/web/package.json`
@@ -1137,111 +1208,171 @@ cargo clippy --workspace --all-targets -- -D warnings
 - `crates/desmos-webui/web/src/main.tsx`
 - `crates/desmos-webui/web/src/app.tsx`
 - `crates/desmos-webui/web/src/api.ts`
-- `crates/desmos-webui/build.rs` — runs `npm ci && npm run build` with staleness check
-- `crates/desmos-webui/src/embed.rs` — `include_dir!("web/dist")`
+- `crates/desmos-webui/web/src/hooks/{useFetch,useWsStream}.ts`
+- `crates/desmos-webui/web/src/styles/{tokens,global}.css` — placeholder, filled by BRANDING.md
 
 **Acceptance Criteria:**
-- [ ] `cargo build -p desmos-webui` runs `npm run build` and embeds `dist/`.
-- [ ] `cargo build --no-default-features -p desmos-webui` skips Node (feature flag).
-- [ ] SPA loads from `GET /` through the embedded server.
+- [ ] `npm ci && npm run build` produces `web/dist/`.
+- [ ] `npm run dev` serves on `:5173`.
+- [ ] Eslint + TypeScript strict mode pass.
 
-**Dependencies:** Task 50
-**Effort:** 5-6 hours
-**Refs:** IMPLEMENTATION.md §1.2 (React decision), §3.1
+**Dependencies:** Task 55
+**Effort:** 3-4 hours
+**Refs:** IMPLEMENTATION.md §3.1
 
 ---
 
-### Task 53: Dashboard, Interfaces, Bonding Pages
+### Task 60: `build.rs` Frontend Integration + Embed
 
-**Three primary read+control screens.**
+**`build.rs` runs the frontend build and `include_dir!` embeds the output.**
+
+**Files to create:**
+- `crates/desmos-webui/build.rs` — runs `npm ci && npm run build` with staleness check + feature-gate
+- `crates/desmos-webui/src/embed.rs` — `include_dir!("web/dist")` + static-file route handler
+
+**Acceptance Criteria:**
+- [ ] `cargo build -p desmos-webui` invokes the Vite build once.
+- [ ] Re-building with no frontend changes skips Node.
+- [ ] `cargo build --no-default-features -p desmos-webui` skips Node (`embed` feature off).
+- [ ] `GET /` serves `index.html` from the embedded bundle.
+- [ ] `GET /static/*` serves embedded assets with correct `Content-Type`.
+
+**Dependencies:** Task 59
+**Effort:** 3 hours
+**Refs:** IMPLEMENTATION.md §1.2
+
+---
+
+### Task 61: Dashboard Page + ThroughputChart
+
+**Live dashboard with real-time throughput graph.**
 
 **Files to create:**
 - `crates/desmos-webui/web/src/pages/Dashboard.tsx`
-- `crates/desmos-webui/web/src/pages/Interfaces.tsx`
-- `crates/desmos-webui/web/src/pages/Bonding.tsx`
 - `crates/desmos-webui/web/src/components/ThroughputChart.tsx`
-- `crates/desmos-webui/web/src/components/InterfaceTable.tsx`
-- `crates/desmos-webui/web/src/components/StrategyDropdown.tsx`
-- `crates/desmos-webui/web/src/hooks/useWsStream.ts`
-- `crates/desmos-webui/web/src/hooks/useFetch.ts`
+- `crates/desmos-webui/web/src/components/TunnelStatusBadge.tsx`
 
 **Acceptance Criteria:**
-- [ ] Dashboard shows live throughput graph updating via WS.
-- [ ] Interfaces table toggles links via `PUT /api/v1/interfaces/:name`.
-- [ ] Bonding page hot-switches strategy.
+- [ ] Throughput chart updates via `/api/v1/ws/stats`.
+- [ ] Status badge reflects `up|connecting|degraded|down`.
+- [ ] Dashboard loads < 200 ms on localhost.
 
-**Dependencies:** Task 52
-**Effort:** 8 hours
-**Refs:** SPECIFICATION.md §3.5
+**Dependencies:** Task 58, Task 60
+**Effort:** 5 hours
+**Refs:** SPECIFICATION.md §3.5.1
 
 ---
 
-### Task 54: Connections, Logs, Settings Pages
+### Task 62: Interfaces + Bonding Pages
+
+**Interface table and bonding controls.**
+
+**Files to create:**
+- `crates/desmos-webui/web/src/pages/Interfaces.tsx`
+- `crates/desmos-webui/web/src/components/InterfaceTable.tsx`
+- `crates/desmos-webui/web/src/pages/Bonding.tsx`
+- `crates/desmos-webui/web/src/components/StrategyDropdown.tsx`
+- `crates/desmos-webui/web/src/components/WeightSlider.tsx`
+
+**Acceptance Criteria:**
+- [ ] Interfaces table toggles links via `PUT /api/v1/interfaces/:name`.
+- [ ] Bonding strategy dropdown hot-switches within 500 ms.
+- [ ] Weight sliders apply and reflect in `GET /api/v1/bonding`.
+
+**Dependencies:** Task 61
+**Effort:** 5 hours
+**Refs:** SPECIFICATION.md §3.5.2, §3.5.3
+
+---
+
+### Task 63: Connections + Logs + Settings Pages
 
 **Remaining three screens.**
 
 **Files to create:**
 - `crates/desmos-webui/web/src/pages/Connections.tsx`
 - `crates/desmos-webui/web/src/pages/Logs.tsx`
-- `crates/desmos-webui/web/src/pages/Settings.tsx`
 - `crates/desmos-webui/web/src/components/LogStream.tsx`
+- `crates/desmos-webui/web/src/pages/Settings.tsx`
+- `crates/desmos-webui/web/src/components/TomlEditor.tsx`
 
 **Acceptance Criteria:**
-- [ ] Connections page lists server clients, kick works.
-- [ ] Logs page streams via `/api/v1/ws/logs` with level filter.
-- [ ] Settings page edits config with TOML validation before submit.
+- [ ] Connections lists server clients, kick works.
+- [ ] Logs streams via `/api/v1/ws/logs` with level filter.
+- [ ] Settings editor validates TOML before submitting.
 
-**Dependencies:** Task 53
-**Effort:** 8 hours
-**Refs:** SPECIFICATION.md §3.5
+**Dependencies:** Task 62
+**Effort:** 6-8 hours
+**Refs:** SPECIFICATION.md §3.5.4, §3.5.5, §3.5.6
 
 ---
 
-### Task 55: DNS Leak Protection
+### Task 64: DNS Leak Protection
 
-**Route DNS queries through the tunnel when `dns_leak_protection = true`.**
+**Route DNS through the tunnel when `dns_leak_protection = true`.**
 
 **Files to create:**
-- `crates/desmos-core/src/net/dns.rs` — minimal DNS resolver
-- `crates/desmos-core/src/net/resolver_hook.rs` — override system DNS via platform means (`resolv.conf` on Linux, `scutil` on macOS, netsh on Windows)
+- `crates/desmos-core/src/net/dns.rs` — minimal UDP DNS resolver
+- `crates/desmos-core/src/net/resolver_hook.rs` — platform DNS override (`resolv.conf`, `scutil`, `netsh`)
 
 **Acceptance Criteria:**
-- [ ] With the option on, `dig example.com` is served through the tunnel.
-- [ ] With the option off, DNS behavior is unchanged.
+- [ ] With the option on, queries route through the tunnel.
+- [ ] With the option off, behavior is unchanged.
 - [ ] Teardown restores the original DNS configuration.
 
-**Dependencies:** Task 42
+**Dependencies:** Task 45
 **Effort:** 6 hours
-**Refs:** SPECIFICATION.md §3 / PRD §12 Phase 7
+**Refs:** PRD §12 Phase 7
 
 ---
 
-### Task 56: Documentation Site
+## Release
 
-**Write user-facing docs: architecture, protocol, CLI, Web UI.**
+> Documentation, benchmarks, packaging, v1.0 tag.
+
+### Task 65: User-Facing Documentation
+
+**Architecture, protocol, CLI, Web UI docs.**
 
 **Files to create:**
 - `docs/architecture.md`
 - `docs/protocol.md` — DWP spec reference
 - `docs/cli.md` — every subcommand with examples
-- `docs/webui.md` — screenshots + flows
-- `docs/adr/0001-workspace-layout.md`
-- `docs/adr/0002-hand-rolled-runtime.md`
-- `docs/adr/0003-5-crate-budget.md`
-- `README.md` — full rewrite per BRANDING.md
+- `docs/webui.md` — page-by-page reference
 
 **Acceptance Criteria:**
 - [ ] `cargo doc --workspace --no-deps` succeeds with zero broken intra-doc links.
 - [ ] Every CLI subcommand has an example in `docs/cli.md`.
-- [ ] README matches BRANDING.md voice and style.
+- [ ] DWP packet layout diagram matches IMPLEMENTATION.md §4.1.
 
-**Dependencies:** All previous
-**Effort:** 6-8 hours
+**Dependencies:** Task 1-64
+**Effort:** 6 hours
+**Refs:** IMPLEMENTATION.md §12
+
+---
+
+### Task 66: ADRs + README Rewrite
+
+**Architecture Decision Records + BRANDING-aligned README.**
+
+**Files to create:**
+- `docs/adr/0001-workspace-layout.md`
+- `docs/adr/0002-hand-rolled-runtime.md`
+- `docs/adr/0003-5-crate-budget.md`
+- `docs/adr/0004-typestate-for-sessions.md`
+- `README.md` — full rewrite following BRANDING.md voice and visual conventions
+
+**Acceptance Criteria:**
+- [ ] Each ADR uses the standard `Context / Decision / Consequences` format.
+- [ ] README renders cleanly on GitHub and matches BRANDING.md.
+
+**Dependencies:** Task 65, BRANDING.md
+**Effort:** 4 hours
 **Refs:** BRANDING.md
 
 ---
 
-### Task 57: Benchmarks and Perf Validation
+### Task 67: Benchmarks and Perf Validation
 
 **`criterion` benches that gate release on perf targets.**
 
@@ -1252,106 +1383,144 @@ cargo clippy --workspace --all-targets -- -D warnings
 - `benches/wire.rs`
 
 **Acceptance Criteria:**
-- [ ] AEAD throughput ≥ 2 Gbps/core on x86_64.
-- [ ] Scheduler dispatch overhead < 200 ns/packet.
-- [ ] Reorder buffer p99 added latency < 1 ms.
+- [ ] AEAD throughput ≥ 2 Gbps / core on x86_64.
+- [ ] Scheduler dispatch < 200 ns/packet.
+- [ ] Reorder p99 added latency < 1 ms.
 - [ ] CI publishes bench deltas on PRs.
 
-**Dependencies:** All previous
+**Dependencies:** Task 1-64
 **Effort:** 5-6 hours
 **Refs:** SPECIFICATION.md §10
 
 ---
 
-### Task 58: Release v1.0.0
+### Task 68: Packaging Artifacts
 
-**Tag, build all targets, publish binaries, update docs.**
+**Debian, RPM, AppImage, Homebrew formula, winget, AUR.**
 
-**Files to create/modify:**
-- `.github/workflows/release.yml` — builds + MSI + pkg + ipk + deb + rpm on tag push
-- `CHANGELOG.md` — v1.0.0 entry
-- `packaging/linux/debian/`, `packaging/linux/rpm/`, `packaging/macos/homebrew/`, `packaging/linux/appimage/`
-- `scripts/release.sh`
+**Files to create:**
+- `packaging/linux/debian/` — control, rules, postinst
+- `packaging/linux/rpm/desmos.spec`
+- `packaging/linux/appimage/AppImage.yml`
+- `packaging/linux/systemd/desmos.service`
+- `packaging/macos/homebrew/desmos.rb` (template)
+- `packaging/macos/pkg/` — `.pkg` postinstall scripts
+- `packaging/windows/winget/desmos.yaml` (template)
+- `packaging/linux/aur/PKGBUILD` (template)
 
 **Acceptance Criteria:**
-- [ ] Pushing tag `v1.0.0` triggers a release build that produces artifacts for every Tier 1 + Tier 2 target.
-- [ ] GitHub Release attaches all artifacts with SHA-256 sums.
-- [ ] Homebrew formula, AUR PKGBUILD, and winget manifest PRs queued.
-- [ ] v1.0.0 smoke test: install the Linux binary on a fresh VM, run `desmos up`, verify tunnel.
+- [ ] `dpkg-deb --build` produces a working `.deb` on Debian.
+- [ ] `rpmbuild -bb` produces an installable `.rpm`.
+- [ ] Homebrew formula installs and runs `desmos --version`.
+- [ ] `desmos.service` systemd unit starts and stops the daemon.
 
-**Dependencies:** Task 1-57
-**Effort:** 6-8 hours
+**Dependencies:** Task 45, Task 46, Task 49
+**Effort:** 8 hours
+**Refs:** PRD §14
+
+---
+
+### Task 69: Release Workflow + v1.0.0 Tag + Smoke Test
+
+**Automated tagged release producing all artifacts, plus a fresh-VM smoke test.**
+
+**Files to create/modify:**
+- `.github/workflows/release.yml` — on tag push: build all Tier 1 + Tier 2 targets, MSI, deb, rpm, pkg, ipk, AppImage; attach to GitHub Release with SHA-256 sums
+- `CHANGELOG.md` — v1.0.0 entry
+- `scripts/release.sh` — local pre-flight check (tag, changelog, version bump)
+- `scripts/smoke-test.sh` — installs the Linux binary on a fresh VM and runs `desmos up`
+
+**Acceptance Criteria:**
+- [ ] Pushing `v1.0.0` triggers the full release build.
+- [ ] GitHub Release has artifacts for every Tier 1 + Tier 2 target with SHA-256 sums.
+- [ ] `scripts/smoke-test.sh` passes on a fresh Debian 12 VM.
+- [ ] Version in `Cargo.toml` of every crate matches `1.0.0`.
+
+**Dependencies:** Task 1-68
+**Effort:** 6 hours
 **Refs:** PRD §14
 
 ---
 
 ## Milestones
 
-| Milestone          | After Task | What's Achieved                                                       | Demo-able?                          |
-|--------------------|------------|-----------------------------------------------------------------------|-------------------------------------|
-| Foundation         | 6          | Workspace compiles, CI green on Tier 1                                | `cargo build`                       |
-| First Tunnel       | 14         | Plaintext Linux tunnel through TUN + UDP                              | `ping` through `desmos0`            |
-| Encrypted Tunnel   | 19         | Noise IK + AEAD tunnel, single interface                              | `iperf3` with encryption            |
-| Bonded Tunnel      | 24         | 2+ interfaces via Round-Robin, probing, reorder                       | `iperf3` faster than one link       |
-| Advanced Bonding   | 29         | 4 strategies, failover, PMTUD                                         | Kill an interface mid-transfer      |
-| Server Mode MVP    | 35         | Multi-client Linux server with 4 auth methods                         | Two clients share a server          |
-| P2P                | 38         | STUN + hole punch + relay fallback                                    | Two NAT'd peers tunnel directly     |
-| Cross-Platform     | 45         | All 6 platforms, privilege drop, sandboxing                           | Run on macOS, Windows, OpenWrt      |
-| Web UI             | 54         | Full dashboard with all 6 screens                                     | Live demo in browser                |
-| v1.0 Release       | 58         | All artifacts published, docs complete, perf targets met              | Download + install                  |
+| Milestone         | After Task | What's Achieved                                               | Demo-able?                       |
+|-------------------|------------|---------------------------------------------------------------|----------------------------------|
+| Foundation        | 6          | Workspace compiles, CI green on Tier 1                        | `cargo build`                    |
+| First Tunnel      | 14         | Plaintext Linux tunnel through TUN + UDP                      | `ping` through `desmos0`         |
+| Encrypted Tunnel  | 19         | Noise IK + AEAD tunnel, single interface                      | `iperf3` with encryption         |
+| Bonded Tunnel     | 24         | 2+ interfaces via Round-Robin, probing, reorder               | `iperf3` faster than one link    |
+| Advanced Bonding  | 29         | 4 strategies, failover, PMTUD                                 | Kill an interface mid-transfer   |
+| Server Mode MVP   | 36         | Multi-client Linux server with 4 auth methods                 | Two clients share one server     |
+| P2P               | 39         | STUN + hole punch + relay                                     | Two NAT'd peers tunnel           |
+| Cross-Platform    | 49         | All 6 platforms, priv drop, MSI, ipk, pkg                     | Run on macOS, Windows, OpenWrt   |
+| Web UI Backend    | 58         | HTTP + REST + WS backend complete                             | `curl` every endpoint            |
+| Web UI Frontend   | 63         | All 6 screens wired to backend                                | Live browser demo                |
+| Polish & Perf     | 67         | Docs complete, benches meet targets                           | Grafana dashboard via Prometheus |
+| v1.0 Release      | 69         | All artifacts published, smoke test green                     | Download + install               |
 
 ---
 
 ## Dependency Graph
 
 ```
-[T1 Scaffold]
-  → [T2 Log] → [T3 TOML] → [T4 Schema]
-  → [T5 CLI] → [T6 CI]
+Phase 0:
+[T1 Scaffold] -> [T2 Log] -> [T3 TOML] -> [T4 Schema]
+              -> [T5 CLI] -> [T6 CI]
 
 Phase 1:
-[T7 DWP] → [T8 PktBuf] → [T9 Ring] → [T10 epoll] → [T11 Timer]
-                                         ↓
-                                      [T12 TUN] → [T13 Socket]
-                                                      ↓
-                                                [T14 Plaintext E2E]
+[T7 DWP] -> [T8 PktBuf] -> [T9 Ring] -> [T10 epoll] -> [T11 Timer]
+                                           |
+                                           v
+                                      [T12 TUN] -> [T13 Socket]
+                                                       |
+                                                       v
+                                                 [T14 Plaintext E2E]
 
 Phase 2:
-[T15 Crypto] → [T16 Noise IK] → [T17 Session] → [T19 Encrypted Pipeline]
-                                       ↓                ↑
-                                [T18 Anti-replay] ──────┘
-[T19] → [T20 Iface] → [T21 RR] → [T22 Reorder] → [T23 Probe] → [T24 E2E]
+[T15 Crypto] -> [T16 Noise IK] -> [T17 Session] -> [T19 Encrypted Pipeline]
+                                        |                  ^
+                                 [T18 Anti-replay] ---------'
+[T19] -> [T20 Iface] -> [T21 RR] -> [T22 Reorder] -> [T23 Probe] -> [T24 E2E]
 
 Phase 3:
-[T23] → [T25 Weighted+LA] → [T26 Redundant]
-           ↓
-    [T27 Link SM] → [T28 PMTUD] → [T29 Failover E2E]
+[T23] -> [T25 Weighted+LA] -> [T26 Redundant]
+            |
+       [T27 Link SM] -> [T28 PMTUD] -> [T29 Failover E2E]
 
 Phase 4:
-[T19,T17] → [T30 Server] → [T31 NAT]
-                 ↓
-           [T32 PSK+Pub] → [T33 TOTP+mTLS]
-                 ↓
-           [T34 RateLimit] → [T35 CLI]
+[T19,T17] -> [T30 Server] -> [T31 NAT]
+                   |
+             [T32 PSK+Pub] -> [T33 TOTP] -> [T34 mTLS]
+                   |
+             [T35 RateLimit] -> [T36 Server CLI]
 
 Phase 5:
-[T13] → [T36 STUN] → [T37 Holepunch] → [T38 Relay]
+[T13] -> [T37 STUN] -> [T38 Holepunch] -> [T39 Relay]
 
 Phase 6:
-[T10-T19] → [T39 macOS] → [T41 FreeBSD]
-                  ↓                ↓
-             [T40 Windows]    [T42 Priv drop]
-                                   ↓
-                        [T43 OpenWrt] [T44 pfSense] [T45 Win Svc]
+[T10,T9] -> [T40 kqueue] -> [T41 macOS TUN]
+                         -> [T44 FreeBSD TUN]
+[T10]    -> [T42 IOCP]   -> [T43 Wintun]
+[T41,T43,T44] -> [T45 Priv Drop]
+[T45] -> [T46 OpenWrt IPK] -> [T47 OpenWrt UCI/LuCI]
+[T44] -> [T48 pfSense]
+[T43] -> [T49 Win Service + MSI]
 
 Phase 7:
-[T10] → [T46 HTTP] → [T47 JSON] → [T48 WS] → [T49 BasicAuth]
-                                                   ↓
-                                             [T50 REST] → [T51 Prom]
-                                                   ↓
-                                             [T52 Vite] → [T53 Pages1] → [T54 Pages2]
-[T42] → [T55 DNS]
+[T10] -> [T50 HTTP Core] -> [T51 Router] -> [T52 JSON]
+                                         -> [T53 WebSocket]
+                                         -> [T54 Basic Auth]
+[T51,T54] -> [T55 REST Read] -> [T56 REST Write]
+[T55] -> [T57 Prometheus]
+[T53,T55] -> [T58 WS Stats+Logs]
+[T55] -> [T59 Vite Scaffold] -> [T60 build.rs Embed]
+[T58,T60] -> [T61 Dashboard] -> [T62 Iface+Bond] -> [T63 Conn+Logs+Settings]
+[T45] -> [T64 DNS Leak]
 
 Release:
-ALL → [T56 Docs] → [T57 Bench] → [T58 v1.0.0]
+ALL -> [T65 Docs] -> [T66 ADRs+README]
+ALL -> [T67 Benchmarks]
+[T45,T46,T49] -> [T68 Packaging Artifacts]
+[T66,T67,T68] -> [T69 Release v1.0.0]
 ```
