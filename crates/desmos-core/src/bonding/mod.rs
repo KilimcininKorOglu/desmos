@@ -33,8 +33,10 @@ pub use reorder::ReorderBuffer;
 pub use score::LinkScore;
 pub use score::LinkStats;
 pub use strategy::BondingStrategy;
+pub use strategy::LatencyAdaptive;
 pub use strategy::LinkSelection;
 pub use strategy::RoundRobin;
+pub use strategy::Weighted;
 
 use std::sync::Arc;
 use std::sync::RwLock;
