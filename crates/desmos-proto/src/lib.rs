@@ -2,6 +2,7 @@
 //!
 //! This crate is I/O-free and compiles without platform syscalls.
 
+pub mod antireplay;
 pub mod crypto;
 pub mod errors;
 pub mod flags;
