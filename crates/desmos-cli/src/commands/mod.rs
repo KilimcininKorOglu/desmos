@@ -2,6 +2,7 @@
 //! implements [`crate::Command`]. Task 5 shipped stubs; Task 14 replaced
 //! the `up` stub with the real plaintext-mode implementation.
 
+pub mod interfaces;
 pub mod up;
 
 use std::io::Write;
@@ -11,6 +12,7 @@ use crate::errors::CliResult;
 use crate::output::Writer;
 use crate::parser::GlobalFlags;
 
+pub use interfaces::InterfacesCommand;
 pub use up::UpCommand;
 
 /// Returns the list of standard commands registered with the dispatcher.
@@ -96,19 +98,6 @@ impl Command for ConfigCommand {
     }
     fn synopsis(&self) -> &'static str {
         "Validate, show, or edit configuration"
-    }
-    fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        stub_run(self.name(), subargs, globals)
-    }
-}
-
-pub struct InterfacesCommand;
-impl Command for InterfacesCommand {
-    fn name(&self) -> &'static str {
-        "interfaces"
-    }
-    fn synopsis(&self) -> &'static str {
-        "List, enable, disable, or reweight bonded interfaces"
     }
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
         stub_run(self.name(), subargs, globals)
