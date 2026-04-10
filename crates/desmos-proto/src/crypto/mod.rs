@@ -8,6 +8,7 @@ pub mod aead;
 pub mod hash;
 pub mod hkdf;
 pub mod x25519;
+pub mod x25519_field;
 
 use core::fmt;
 
