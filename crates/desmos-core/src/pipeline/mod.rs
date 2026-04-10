@@ -7,10 +7,14 @@
 //! that stitches them together with an [`EpollReactor`].
 
 pub mod inbound;
+pub mod metrics;
 pub mod outbound;
 
 pub use inbound::forward_udp_to_tun;
+pub use inbound::forward_udp_to_tun_encrypted;
+pub use metrics::PipelineMetrics;
 pub use outbound::forward_tun_to_udp;
+pub use outbound::forward_tun_to_udp_encrypted;
 
 use std::net::SocketAddr;
 

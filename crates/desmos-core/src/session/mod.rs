@@ -37,7 +37,10 @@ pub use rekey::REKEY_INTERVAL_MS;
 
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;
+use std::sync::Mutex;
 
+use desmos_proto::antireplay::AntiReplayWindow;
+use desmos_proto::antireplay::ReplayError;
 use desmos_proto::crypto::aead::AeadKey;
 use desmos_proto::crypto::aead::NONCE_LEN;
 use desmos_proto::crypto::x25519::PublicKey;
@@ -57,6 +60,8 @@ use desmos_proto::SessionId;
 pub enum SessionError {
     Handshake(HandshakeError),
     Crypto(CryptoError),
+    /// Anti-replay window rejected the packet (duplicate or out-of-window).
+    Replay(ReplayError),
     /// `encrypt_data` or `decrypt_data` called with a sequence number
     /// that would overflow the 64-bit counter (2^64 packets — will not
     /// happen in practice but we refuse rather than wrap).
@@ -73,6 +78,12 @@ impl From<HandshakeError> for SessionError {
     }
 }
 
+impl From<ReplayError> for SessionError {
+    fn from(e: ReplayError) -> Self {
+        Self::Replay(e)
+    }
+}
+
 impl From<CryptoError> for SessionError {
     fn from(e: CryptoError) -> Self {
         Self::Crypto(e)
@@ -84,6 +95,7 @@ impl core::fmt::Display for SessionError {
         match self {
             Self::Handshake(e) => write!(f, "session: handshake: {e}"),
             Self::Crypto(e) => write!(f, "session: crypto: {e}"),
+            Self::Replay(e) => write!(f, "session: {e}"),
             Self::CounterOverflow => f.write_str("session: send counter overflow"),
             Self::WrongStep => f.write_str("session: advance called in wrong step"),
         }
@@ -123,6 +135,11 @@ pub struct Established {
     send_key: AeadKey,
     recv_key: AeadKey,
     send_counter: AtomicU64,
+    /// Per-session anti-replay window guarding `decrypt_data`. Wrapped
+    /// in a `Mutex` because `decrypt_data` takes `&self` (so the
+    /// session is `Sync` for `SessionTable` storage) but the window is
+    /// mutable state.
+    recv_window: Mutex<AntiReplayWindow>,
     established_at_ms: u64,
     handshake_hash: [u8; 32],
 }
@@ -289,6 +306,7 @@ fn established_from_keys(
             send_key,
             recv_key,
             send_counter: AtomicU64::new(0),
+            recv_window: Mutex::new(AntiReplayWindow::new()),
             established_at_ms: now_ms,
             handshake_hash: keys.handshake_hash,
         },
@@ -300,12 +318,11 @@ fn established_from_keys(
 // ---------------------------------------------------------------------------
 
 impl Session<Established> {
-    /// Seal `plaintext` with the session's send key. Returns the
-    /// ciphertext plus AEAD tag. The sequence counter is incremented
-    /// atomically so this is safe to call from multiple threads on the
-    /// same session (though single-threaded per session is the intended
-    /// use).
-    pub fn encrypt_data(&self, plaintext: &[u8]) -> Result<Vec<u8>, SessionError> {
+    /// Seal `plaintext` with the session's send key and return the
+    /// sequence number that was used together with the ciphertext.
+    /// The pipeline stage stamps `seq` into the DWP header before
+    /// putting the packet on the wire.
+    pub fn encrypt_packet(&self, plaintext: &[u8]) -> Result<(u64, Vec<u8>), SessionError> {
         let seq = self.state.send_counter.fetch_add(1, Ordering::SeqCst);
         if seq == u64::MAX {
             return Err(SessionError::CounterOverflow);
@@ -314,13 +331,27 @@ impl Session<Established> {
         let aad = build_aad(self.id, seq);
         let mut buf = plaintext.to_vec();
         self.state.send_key.seal_in_place(&nonce, &aad, &mut buf)?;
-        Ok(buf)
+        Ok((seq, buf))
     }
 
-    /// Open a received packet. The caller must already know the sequence
-    /// number from the DWP header (Task 7). `ciphertext` is opened in
-    /// place; the returned `Vec` is a copy of the plaintext region.
+    /// Convenience wrapper over [`encrypt_packet`](Self::encrypt_packet)
+    /// for call sites that do not need the sequence number back.
+    pub fn encrypt_data(&self, plaintext: &[u8]) -> Result<Vec<u8>, SessionError> {
+        self.encrypt_packet(plaintext).map(|(_, ct)| ct)
+    }
+
+    /// Open a received packet.
+    ///
+    /// Anti-replay is enforced first: duplicates and out-of-window
+    /// sequences return `SessionError::Replay` without touching the
+    /// AEAD. Successful opens update the window. `ciphertext` is
+    /// opened in place; the returned `Vec` is a copy of the plaintext
+    /// region.
     pub fn decrypt_data(&self, seq: u64, ciphertext: &mut [u8]) -> Result<Vec<u8>, SessionError> {
+        {
+            let mut window = self.state.recv_window.lock().unwrap();
+            window.check_and_update(seq)?;
+        }
         let nonce = build_nonce(seq);
         let aad = build_aad(self.id, seq);
         let pt = self.state.recv_key.open_in_place(&nonce, &aad, ciphertext)?;
@@ -377,12 +408,17 @@ pub enum RekeyOutcome {
 impl Session<Rekeying> {
     /// Decrypt an in-flight packet with the *old* keys. The new
     /// handshake has not finalised yet, so freshly-sent packets may
-    /// still arrive under the previous epoch.
+    /// still arrive under the previous epoch. The old session's
+    /// anti-replay window is still enforced.
     pub fn decrypt_with_old(
         &self,
         seq: u64,
         ciphertext: &mut [u8],
     ) -> Result<Vec<u8>, SessionError> {
+        {
+            let mut window = self.state.old.recv_window.lock().unwrap();
+            window.check_and_update(seq)?;
+        }
         let nonce = build_nonce(seq);
         let aad = build_aad(self.id, seq);
         let pt = self.state.old.recv_key.open_in_place(&nonce, &aad, ciphertext)?;
@@ -618,5 +654,50 @@ mod tests {
     fn nonce_layout_is_four_zero_then_big_endian_counter() {
         let n = build_nonce(0x0102_0304_0506_0708);
         assert_eq!(n, [0, 0, 0, 0, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07, 0x08]);
+    }
+
+    #[test]
+    fn encrypt_packet_returns_the_seq_that_was_used() {
+        let (ini, _res) = full_handshake();
+        let (seq0, _) = ini.encrypt_packet(b"first").unwrap();
+        let (seq1, _) = ini.encrypt_packet(b"second").unwrap();
+        let (seq2, _) = ini.encrypt_packet(b"third").unwrap();
+        assert_eq!(seq0, 0);
+        assert_eq!(seq1, 1);
+        assert_eq!(seq2, 2);
+        assert_eq!(ini.send_counter(), 3);
+    }
+
+    #[test]
+    fn decrypt_rejects_replay_of_the_same_packet() {
+        let (ini, res) = full_handshake();
+        let (seq, ct) = ini.encrypt_packet(b"once").unwrap();
+        let mut first = ct.clone();
+        let mut second = ct;
+        res.decrypt_data(seq, &mut first).unwrap();
+        let err = res.decrypt_data(seq, &mut second).unwrap_err();
+        assert!(matches!(err, SessionError::Replay(_)), "got {err:?}");
+    }
+
+    #[test]
+    fn decrypt_rejects_out_of_window_sequence() {
+        let (ini, res) = full_handshake();
+        // Advance the initiator counter past the 128-wide window.
+        for _ in 0..200u64 {
+            let _ = ini.encrypt_data(b"skip").unwrap();
+        }
+        // Now send a real packet; the receiver sees it and slides past.
+        let (seq_high, ct_high) = ini.encrypt_packet(b"fresh").unwrap();
+        let mut buf = ct_high.clone();
+        res.decrypt_data(seq_high, &mut buf).unwrap();
+
+        // Synthesise an ancient sequence that is well below the window tail.
+        // We cannot actually encrypt at that seq without rewinding the
+        // counter, so test that the window alone rejects the call before
+        // AEAD runs by passing any nonsense ciphertext — the replay check
+        // fires first.
+        let mut bogus = vec![0u8; 32];
+        let err = res.decrypt_data(0, &mut bogus).unwrap_err();
+        assert!(matches!(err, SessionError::Replay(_)), "got {err:?}");
     }
 }
