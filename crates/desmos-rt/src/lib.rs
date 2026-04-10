@@ -5,6 +5,10 @@
 //! SPSC ring buffers, and the buffer pool.
 
 pub mod pool;
+pub mod ring;
 
 pub use pool::PacketPool;
 pub use pool::PoolStats;
+pub use ring::Consumer;
+pub use ring::Producer;
+pub use ring::SpscRing;

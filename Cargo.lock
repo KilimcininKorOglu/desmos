@@ -28,6 +28,9 @@ version = "0.1.0"
 [[package]]
 name = "desmos-rt"
 version = "0.1.0"
+dependencies = [
+ "desmos-proto",
+]
 
 [[package]]
 name = "desmos-webui"
