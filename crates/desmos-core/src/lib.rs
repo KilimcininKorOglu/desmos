@@ -4,6 +4,7 @@
 //! server, p2p, and authentication. Depends on `desmos-proto` and
 //! `desmos-rt` but knows nothing about platform syscalls directly.
 
+pub mod config;
 pub mod errors;
 pub mod log;
 
