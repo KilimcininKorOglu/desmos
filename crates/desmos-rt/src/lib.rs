@@ -12,6 +12,9 @@ pub mod timer;
 #[cfg(unix)]
 pub mod reactor;
 
+#[cfg(unix)]
+pub mod tun;
+
 #[cfg(target_os = "linux")]
 pub mod linux;
 
@@ -32,6 +35,10 @@ pub use timer::TimerWheel;
 pub use reactor::RawSource;
 #[cfg(unix)]
 pub use reactor::Reactor;
+#[cfg(unix)]
+pub use tun::Tun;
 
 #[cfg(target_os = "linux")]
 pub use linux::EpollReactor;
+#[cfg(target_os = "linux")]
+pub use linux::LinuxTun;
