@@ -6,6 +6,7 @@ pub mod antireplay;
 pub mod crypto;
 pub mod errors;
 pub mod flags;
+pub mod fragment;
 pub mod handshake;
 pub mod packet;
 pub mod types;

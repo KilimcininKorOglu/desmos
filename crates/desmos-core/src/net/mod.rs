@@ -11,6 +11,7 @@
 //! returns `NotImplemented` until the cross-platform phase (Task 41+).
 
 pub mod iface;
+pub mod pmtud;
 
 #[cfg(target_os = "linux")]
 pub mod watcher;
@@ -19,6 +20,8 @@ pub use iface::list;
 pub use iface::IfaceError;
 pub use iface::IfaceFlags;
 pub use iface::NetworkInterface;
+pub use pmtud::Pmtud;
+pub use pmtud::PmtudState;
 
 #[cfg(target_os = "linux")]
 pub use watcher::watch;
