@@ -12,6 +12,7 @@ pub mod config;
 pub mod errors;
 pub mod log;
 pub mod net;
+pub mod server;
 pub mod session;
 
 #[cfg(unix)]

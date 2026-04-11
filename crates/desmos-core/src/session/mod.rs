@@ -32,6 +32,7 @@ pub mod keepalive;
 pub mod manager;
 pub mod rekey;
 
+pub use manager::AnySession;
 pub use manager::SessionTable;
 pub use rekey::REKEY_INTERVAL_MS;
 
