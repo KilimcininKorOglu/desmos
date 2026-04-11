@@ -2,7 +2,9 @@
 //! implements [`crate::Command`]. Task 5 shipped stubs; Task 14 replaced
 //! the `up` stub with the real plaintext-mode implementation.
 
+pub mod clients;
 pub mod interfaces;
+pub mod stats;
 pub mod up;
 
 use std::io::Write;
@@ -12,7 +14,9 @@ use crate::errors::CliResult;
 use crate::output::Writer;
 use crate::parser::GlobalFlags;
 
+pub use clients::ClientsCommand;
 pub use interfaces::InterfacesCommand;
+pub use stats::StatsCommand;
 pub use up::UpCommand;
 
 /// Returns the list of standard commands registered with the dispatcher.
@@ -26,6 +30,7 @@ pub fn all() -> Vec<Box<dyn Command>> {
         Box::new(InterfacesCommand),
         Box::new(BondingCommand),
         Box::new(ClientsCommand),
+        Box::new(StatsCommand),
         Box::new(LogsCommand),
         Box::new(WebuiCommand),
         Box::new(VersionCommand),
@@ -111,19 +116,6 @@ impl Command for BondingCommand {
     }
     fn synopsis(&self) -> &'static str {
         "Show or hot-switch the bonding strategy"
-    }
-    fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        stub_run(self.name(), subargs, globals)
-    }
-}
-
-pub struct ClientsCommand;
-impl Command for ClientsCommand {
-    fn name(&self) -> &'static str {
-        "clients"
-    }
-    fn synopsis(&self) -> &'static str {
-        "List or kick connected clients (server mode)"
     }
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
         stub_run(self.name(), subargs, globals)
