@@ -7,6 +7,7 @@
 //! state watching), where there is no sensible reason to route through
 //! the runtime crate.
 
+pub mod auth;
 pub mod bonding;
 pub mod config;
 pub mod errors;
