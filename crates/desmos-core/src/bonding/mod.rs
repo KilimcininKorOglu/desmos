@@ -18,15 +18,23 @@
 //! `ArcSwap` is fine for Task 21; Task 61 benchmarks can revisit if
 //! the read path ever becomes contended.
 
+pub mod failover;
 pub mod link;
+pub mod link_state;
 pub mod probe;
 pub mod reorder;
 pub mod score;
 pub mod strategy;
 
+pub use failover::FailoverController;
+pub use failover::LinkTransition;
 pub use link::Link;
 pub use link::LinkId;
 pub use link::LinkTable;
+pub use link_state::LinkState;
+pub use link_state::LinkStateMachine;
+pub use link_state::ProbeSample;
+pub use link_state::Transition;
 pub use probe::ProbeAck;
 pub use probe::ProbeScheduler;
 pub use reorder::ReorderBuffer;
