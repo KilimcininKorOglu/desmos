@@ -27,6 +27,7 @@ pub mod asn1;
 pub mod psk;
 pub mod pubkey;
 pub mod totp;
+pub mod x509;
 
 pub use psk::PresharedKey;
 pub use psk::PSK_MIN_LEN;

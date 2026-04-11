@@ -11,3 +11,6 @@ description = "Desmos domain logic: bonding, session, config, logger, server, p2
 [dependencies]
 desmos-proto = { path = "../desmos-proto" }
 desmos-rt = { path = "../desmos-rt" }
+
+[dev-dependencies]
+ring = { workspace = true }
