@@ -25,10 +25,13 @@
 
 pub mod psk;
 pub mod pubkey;
+pub mod totp;
 
 pub use psk::PresharedKey;
 pub use psk::PSK_MIN_LEN;
 pub use pubkey::PublicKeyList;
+pub use totp::TotpAuthenticator;
+pub use totp::TotpConfig;
 
 use core::fmt;
 
