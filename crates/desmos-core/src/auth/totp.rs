@@ -522,6 +522,33 @@ mod tests {
         }
     }
 
+    /// RFC 6238 Appendix B test vectors for the HMAC-SHA256
+    /// variant. The Appendix uses a 32-byte ASCII key
+    /// `12345678901234567890123456789012` and 8-digit codes at
+    /// `T = floor(time / 30)`. Every vector below is a direct
+    /// cut-and-paste from the RFC table for SHA256.
+    #[test]
+    fn rfc6238_appendix_b_sha256_vectors() {
+        let key = b"12345678901234567890123456789012".to_vec();
+        let cfg = TotpConfig::with(key, 8, 30, 0, false).unwrap();
+        let now = Arc::new(Mutex::new(0u64));
+        let auth = auth_with_clock(cfg, now.clone());
+        // (time, expected 8-digit code)
+        let vectors: &[(u64, &str)] = &[
+            (59, "46119246"),
+            (1_111_111_109, "68084774"),
+            (1_111_111_111, "67062674"),
+            (1_234_567_890, "91819424"),
+            (2_000_000_000, "90698825"),
+            (20_000_000_000, "77737706"),
+        ];
+        for (time, expected) in vectors {
+            let step = *time / 30;
+            let code = auth.code_for_step(step);
+            assert_eq!(code, *expected, "RFC 6238 vector mismatch at time {time}",);
+        }
+    }
+
     #[test]
     fn debug_format_redacts_secret_material() {
         let cfg = TotpConfig::new(sample_secret()).unwrap();
