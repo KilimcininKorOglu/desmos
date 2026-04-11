@@ -12,6 +12,7 @@
 
 pub mod iface;
 pub mod pmtud;
+pub mod stun;
 
 #[cfg(target_os = "linux")]
 pub mod watcher;
@@ -22,6 +23,9 @@ pub use iface::IfaceFlags;
 pub use iface::NetworkInterface;
 pub use pmtud::Pmtud;
 pub use pmtud::PmtudState;
+pub use stun::query_binding as stun_query_binding;
+pub use stun::StunError;
+pub use stun::TransactionId as StunTransactionId;
 
 #[cfg(target_os = "linux")]
 pub use watcher::watch;
