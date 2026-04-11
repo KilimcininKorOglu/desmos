@@ -24,11 +24,15 @@
 //! picks between them.
 
 pub mod asn1;
+pub mod crl;
+pub mod mtls;
 pub mod psk;
 pub mod pubkey;
 pub mod totp;
 pub mod x509;
 
+pub use mtls::MtlsAuthenticator;
+pub use mtls::MtlsConfig;
 pub use psk::PresharedKey;
 pub use psk::PSK_MIN_LEN;
 pub use pubkey::PublicKeyList;

@@ -297,7 +297,9 @@ fn der_header_len(len: usize) -> usize {
 
 /// Read one `AlgorithmIdentifier` SEQUENCE and return the OID
 /// plus its parameters slice (which may be empty).
-fn read_algorithm_identifier<'a>(r: &mut DerReader<'a>) -> Result<(&'a [u8], &'a [u8]), X509Error> {
+pub(super) fn read_algorithm_identifier<'a>(
+    r: &mut DerReader<'a>,
+) -> Result<(&'a [u8], &'a [u8]), X509Error> {
     let mut ai = r.read_sequence()?;
     let oid = ai.read_oid()?;
     // Parameters are optional. If present they may be `NULL`
@@ -307,7 +309,7 @@ fn read_algorithm_identifier<'a>(r: &mut DerReader<'a>) -> Result<(&'a [u8], &'a
 }
 
 /// Parse a `Time` CHOICE. Returns Unix epoch seconds.
-fn read_time(r: &mut DerReader<'_>) -> Result<u64, X509Error> {
+pub(super) fn read_time(r: &mut DerReader<'_>) -> Result<u64, X509Error> {
     let (tag_byte, value) = r.read_tlv()?;
     match tag_byte {
         tag::UTC_TIME => parse_utc_time(value),
@@ -421,9 +423,9 @@ const OID_ECDSA_WITH_SHA384: &[u8] = &[0x2A, 0x86, 0x48, 0xCE, 0x3D, 0x04, 0x03,
 const OID_RSA_SHA256: &[u8] = &[0x2A, 0x86, 0x48, 0x86, 0xF7, 0x0D, 0x01, 0x01, 0x0B];
 
 /// `Ed25519`: `1.3.101.112`.
-const OID_ED25519: &[u8] = &[0x2B, 0x65, 0x70];
+pub(super) const OID_ED25519: &[u8] = &[0x2B, 0x65, 0x70];
 
-fn oid_to_signature_algorithm(oid: &[u8]) -> Option<SignatureAlgorithm> {
+pub(super) fn oid_to_signature_algorithm(oid: &[u8]) -> Option<SignatureAlgorithm> {
     if oid == OID_ECDSA_WITH_SHA256 {
         Some(SignatureAlgorithm::EcdsaP256Sha256)
     } else if oid == OID_ECDSA_WITH_SHA384 {
