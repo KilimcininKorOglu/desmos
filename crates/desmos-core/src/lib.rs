@@ -13,6 +13,7 @@ pub mod config;
 pub mod errors;
 pub mod log;
 pub mod net;
+pub mod p2p;
 pub mod server;
 pub mod session;
 
