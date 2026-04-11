@@ -17,8 +17,15 @@
 //! needs MixHash and HKDF to share a hash family and our `hkdf` module is
 //! HMAC-SHA256. The rest of the crate continues to use BLAKE3 elsewhere.
 
+pub mod cookie;
 pub mod noise;
 
+pub use cookie::compute_cookie;
+pub use cookie::verify_cookie;
+pub use cookie::CookieError;
+pub use cookie::CookieKey;
+pub use cookie::COOKIE_KEY_LEN;
+pub use cookie::COOKIE_LEN;
 pub use noise::HandshakeError;
 pub use noise::Initiator;
 pub use noise::Responder;

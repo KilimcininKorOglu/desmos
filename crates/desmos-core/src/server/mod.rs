@@ -15,6 +15,7 @@
 
 pub mod clients;
 pub mod nat;
+pub mod ratelimit;
 
 pub use clients::ClientRegistry;
 pub use clients::ServerError;
@@ -23,3 +24,6 @@ pub use nat::NatConfig;
 pub use nat::NatController;
 pub use nat::NatError;
 pub use nat::Runner as NatRunner;
+pub use ratelimit::RateLimiter;
+pub use ratelimit::DEFAULT_MAX_TOKENS;
+pub use ratelimit::DEFAULT_REFILL_MILLI_PER_SEC;
