@@ -23,6 +23,7 @@
 //! `[server.auth] method = "psk" | "pubkey" | "totp" | "mtls"`
 //! picks between them.
 
+pub mod asn1;
 pub mod psk;
 pub mod pubkey;
 pub mod totp;
