@@ -15,9 +15,11 @@
 //! - [`server`] — TCP listener and connection loop.
 //! - [`middleware`] — Chain-of-responsibility middleware.
 //! - [`router`] — Path + method routing with parameter extraction.
+//! - [`json`] — JSON encoder/decoder (subset, depth-limited).
 
 pub mod errors;
 pub mod headers;
+pub mod json;
 pub mod method;
 pub mod middleware;
 pub mod request;
