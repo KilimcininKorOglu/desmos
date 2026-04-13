@@ -53,3 +53,6 @@ pub use linux::LinuxTun;
 
 #[cfg(any(target_os = "macos", target_os = "freebsd"))]
 pub use bsd::KqueueReactor;
+
+#[cfg(target_os = "macos")]
+pub use bsd::MacosTun;
