@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  WiX v4 MSI source for Desmos bonding VPN.
+
+  Build with:
+    wix build desmos.wxs -o desmos.msi \
+      -d BinaryPath="..\..\..\target\x86_64-pc-windows-msvc\release\desmos.exe" \
+      -d Version="0.1.0"
+
+  The MSI:
+    1. Installs desmos.exe to Program Files\Desmos\
+    2. Installs a sample config to ProgramData\Desmos\
+    3. Registers "Desmos" as a Windows Service (LocalSystem, auto-start).
+    4. Starts the service after install.
+    5. Stops and removes the service on uninstall.
+-->
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs">
+  <Package
+    Name="Desmos Bonding VPN"
+    Manufacturer="KilimcininKorOglu"
+    Version="$(var.Version)"
+    UpgradeCode="e7a1c3d9-4f2b-4e8a-9d1f-6b3c5a8e7d2f"
+    Scope="perMachine">
+
+    <MajorUpgrade
+      DowngradeErrorMessage="A newer version of Desmos is already installed." />
+
+    <MediaTemplate EmbedCab="yes" />
+
+    <!-- Install directory: Program Files\Desmos -->
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Desmos">
+        <Component Id="MainExecutable" Guid="a1b2c3d4-e5f6-7890-abcd-ef1234567890">
+          <File
+            Id="DesmosBinary"
+            Source="$(var.BinaryPath)"
+            Name="desmos.exe"
+            KeyPath="yes" />
+
+          <!-- Windows Service registration. -->
+          <ServiceInstall
+            Id="DesmosSvc"
+            Name="Desmos"
+            DisplayName="Desmos Bonding VPN"
+            Description="High-performance connection bonding VPN service."
+            Type="ownProcess"
+            Start="auto"
+            Account="LocalSystem"
+            ErrorControl="normal"
+            Arguments="--service -c &quot;[CommonAppDataFolder]Desmos\desmos.toml&quot;" />
+
+          <ServiceControl
+            Id="DesmosSvcControl"
+            Name="Desmos"
+            Start="install"
+            Stop="both"
+            Remove="uninstall"
+            Wait="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Config directory: ProgramData\Desmos -->
+    <StandardDirectory Id="CommonAppDataFolder">
+      <Directory Id="CONFIGFOLDER" Name="Desmos">
+        <Component Id="SampleConfig" Guid="b2c3d4e5-f6a7-8901-bcde-f12345678901">
+          <File
+            Id="SampleToml"
+            Source="..\..\..\..\config\desmos.toml.example"
+            Name="desmos.toml.example"
+            KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <!-- Feature tree. -->
+    <Feature Id="Complete" Title="Desmos Bonding VPN" Level="1">
+      <ComponentRef Id="MainExecutable" />
+      <ComponentRef Id="SampleConfig" />
+    </Feature>
+
+  </Package>
+</Wix>

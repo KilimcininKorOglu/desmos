@@ -1,0 +1,165 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to release (e.g. 0.1.0)"
+        required: true
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  # ---- Windows MSI -----------------------------------------------------------
+
+  windows-msi:
+    name: Windows MSI (x86_64)
+    runs-on: windows-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Rust toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-windows
+
+      - name: Build release binary
+        run: cargo build --release --target x86_64-pc-windows-msvc
+
+      - name: Verify binary
+        run: |
+          Test-Path target\x86_64-pc-windows-msvc\release\desmos.exe
+        shell: pwsh
+
+      - name: Install WiX v4
+        run: dotnet tool install --global wix
+        shell: pwsh
+
+      - name: Build MSI
+        run: |
+          $version = if ("${{ github.event.inputs.version }}") {
+            "${{ github.event.inputs.version }}"
+          } else {
+            "${{ github.ref_name }}".TrimStart("v")
+          }
+          wix build packaging\windows\wix\desmos.wxs `
+            -o desmos-${version}-x64.msi `
+            -d BinaryPath="target\x86_64-pc-windows-msvc\release\desmos.exe" `
+            -d Version="${version}"
+        shell: pwsh
+
+      - name: Upload MSI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desmos-windows-msi
+          path: "*.msi"
+          retention-days: 30
+
+  # ---- Linux binaries --------------------------------------------------------
+
+  linux-binaries:
+    name: Linux (${{ matrix.target }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-unknown-linux-musl
+            install: "sudo apt-get update && sudo apt-get install -y musl-tools"
+          - target: aarch64-unknown-linux-musl
+            cross: true
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Rust toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - name: Install target deps
+        if: matrix.install
+        run: ${{ matrix.install }}
+
+      - name: Add target
+        if: "!matrix.cross"
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Install cross
+        if: matrix.cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross@0.2.5
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-${{ matrix.target }}
+
+      - name: Build (cargo)
+        if: "!matrix.cross"
+        run: cargo build --release --target ${{ matrix.target }}
+
+      - name: Build (cross)
+        if: matrix.cross
+        run: cross build --release --target ${{ matrix.target }}
+
+      - name: Package tarball
+        run: |
+          mkdir -p dist
+          BIN="target/${{ matrix.target }}/release/desmos"
+          strip "$BIN" 2>/dev/null || true
+          tar czf "dist/desmos-${{ matrix.target }}.tar.gz" \
+            -C "target/${{ matrix.target }}/release" desmos \
+            -C "${{ github.workspace }}" config/desmos.toml.example
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desmos-${{ matrix.target }}
+          path: dist/*.tar.gz
+          retention-days: 30
+
+  # ---- macOS binary ----------------------------------------------------------
+
+  macos-binary:
+    name: macOS (aarch64)
+    runs-on: macos-14
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Rust toolchain
+        run: rustup show active-toolchain || rustup toolchain install
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-macos
+
+      - name: Build release binary
+        run: cargo build --release --target aarch64-apple-darwin
+
+      - name: Package tarball
+        run: |
+          mkdir -p dist
+          BIN="target/aarch64-apple-darwin/release/desmos"
+          strip "$BIN" 2>/dev/null || true
+          tar czf dist/desmos-aarch64-apple-darwin.tar.gz \
+            -C target/aarch64-apple-darwin/release desmos \
+            -C "${{ github.workspace }}" config/desmos.toml.example
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desmos-aarch64-apple-darwin
+          path: dist/*.tar.gz
+          retention-days: 30
