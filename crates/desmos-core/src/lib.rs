@@ -9,6 +9,7 @@
 
 pub mod auth;
 pub mod bonding;
+pub mod broadcast;
 pub mod config;
 pub mod errors;
 pub mod log;

@@ -1,8 +1,7 @@
-//! REST API GET handlers for `/api/v1/*`.
+//! REST API handlers for `/api/v1/*`.
 //!
 //! Each sub-module exposes one or more `RouteHandler`-compatible
-//! functions that produce JSON responses in the standard envelope
-//! format.
+//! functions that produce JSON or WebSocket upgrade responses.
 
 pub mod bonding;
 pub mod clients;
@@ -13,3 +12,4 @@ pub mod logs;
 pub mod stats;
 pub mod status;
 pub mod version;
+pub mod ws;

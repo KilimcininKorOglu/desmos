@@ -104,8 +104,24 @@ pub fn build_router(auth_config: AuthConfig) -> Router {
     router.route_with_middleware(
         desmos_http::Method::Delete,
         "/api/v1/clients/:session_id",
-        auth_mw,
+        auth_mw.clone(),
         handlers::clients::kick,
+    );
+
+    // ---- WebSocket upgrade endpoints ---------------------------------------
+
+    router.route_with_middleware(
+        desmos_http::Method::Get,
+        "/api/v1/ws/stats",
+        auth_mw.clone(),
+        handlers::ws::stats,
+    );
+
+    router.route_with_middleware(
+        desmos_http::Method::Get,
+        "/api/v1/ws/logs",
+        auth_mw,
+        handlers::ws::logs,
     );
 
     router
@@ -305,8 +321,9 @@ mod tests {
         // GET: health + version + status + interfaces + bonding + stats + clients + config + logs = 9
         // PUT: interfaces/:name + bonding/strategy + config = 3
         // DELETE: clients/:session_id = 1
-        // Total = 13
-        assert_eq!(router.len(), 13);
+        // WS GET: ws/stats + ws/logs = 2
+        // Total = 15
+        assert_eq!(router.len(), 15);
     }
 
     // ---- Write endpoint routing tests --------------------------------------
@@ -390,5 +407,23 @@ mod tests {
         let req = make_request(Method::Delete, "/api/v1/clients/42", Some(valid_auth()));
         let resp = router.dispatch(&req);
         assert_eq!(resp.status, StatusCode::OK);
+    }
+
+    // ---- WebSocket routing tests -------------------------------------------
+
+    #[test]
+    fn ws_stats_requires_auth() {
+        let router = build_router(test_auth_config());
+        let req = make_request(Method::Get, "/api/v1/ws/stats", None);
+        let resp = router.dispatch(&req);
+        assert_eq!(resp.status, StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn ws_logs_requires_auth() {
+        let router = build_router(test_auth_config());
+        let req = make_request(Method::Get, "/api/v1/ws/logs", None);
+        let resp = router.dispatch(&req);
+        assert_eq!(resp.status, StatusCode::UNAUTHORIZED);
     }
 }
