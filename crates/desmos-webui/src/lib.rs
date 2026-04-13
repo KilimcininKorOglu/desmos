@@ -6,5 +6,11 @@
 //! # Modules
 //!
 //! - [`auth`] — Basic Auth gate with public path bypass.
+//! - [`dto`] — JSON envelope helpers (success / error envelopes).
+//! - [`handlers`] — Per-endpoint GET handlers.
+//! - [`routes`] — Router builder that wires handlers + middleware.
 
 pub mod auth;
+pub mod dto;
+pub mod handlers;
+pub mod routes;
