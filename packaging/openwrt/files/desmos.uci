@@ -1,0 +1,8 @@
+# Desmos bonding VPN — default UCI config.
+# Full UCI bridge added in Task 47.
+
+config desmos 'main'
+    option enabled '0'
+    option mode 'client'
+    option config_path '/etc/desmos/desmos.toml'
+    option verbose '0'

@@ -1,0 +1,98 @@
+name: OpenWrt IPK
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "packaging/openwrt/**"
+      - "scripts/build-openwrt.sh"
+      - ".github/workflows/openwrt.yml"
+  pull_request:
+    paths:
+      - "crates/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "packaging/openwrt/**"
+      - "scripts/build-openwrt.sh"
+      - ".github/workflows/openwrt.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: openwrt-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: "0"
+
+jobs:
+  build-ipk:
+    name: ipk (${{ matrix.arch }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: mips_24kc
+            rust_target: mips-unknown-linux-musl
+            sdk_url_suffix: ath79-generic
+          - arch: arm_cortex-a7
+            rust_target: armv7-unknown-linux-musleabihf
+            sdk_url_suffix: ipq40xx-generic
+          - arch: aarch64_cortex-a53
+            rust_target: aarch64-unknown-linux-musl
+            sdk_url_suffix: mediatek-filogic
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pinned Rust toolchain
+        run: |
+          rustup show active-toolchain || rustup toolchain install
+          rustup target add ${{ matrix.rust_target }}
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: openwrt-${{ matrix.arch }}
+
+      # Cross-compile the Desmos binary directly — we verify the
+      # binary builds for the target architecture without needing
+      # the full OpenWrt SDK (which is 500MB+ per target).
+      - name: Install cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross@0.2.5
+
+      - name: Cross-compile for ${{ matrix.rust_target }}
+        run: |
+          cross build \
+            --release \
+            --target ${{ matrix.rust_target }} \
+            --manifest-path Cargo.toml
+
+      - name: Verify binary exists
+        run: |
+          BIN="target/${{ matrix.rust_target }}/release/desmos"
+          test -f "$BIN" || { echo "Binary not found: $BIN"; exit 1; }
+          file "$BIN"
+          ls -lh "$BIN"
+
+      - name: Verify packaging files
+        run: |
+          test -f packaging/openwrt/Makefile
+          test -f packaging/openwrt/files/desmos.init
+          test -f packaging/openwrt/files/desmos.uci
+          test -f scripts/build-openwrt.sh
+          test -x scripts/build-openwrt.sh
+          echo "All packaging artifacts present"
+
+      - name: Upload binary artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desmos-${{ matrix.arch }}
+          path: target/${{ matrix.rust_target }}/release/desmos
+          retention-days: 7

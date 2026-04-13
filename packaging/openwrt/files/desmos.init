@@ -1,0 +1,36 @@
+#!/bin/sh /etc/rc.common
+# Desmos bonding VPN — procd init script for OpenWrt.
+#
+# Reads /etc/config/desmos (UCI) and converts it to
+# /var/run/desmos.toml at start time.  Task 47 adds the
+# full UCI bridge; this stub launches desmos with a static
+# config path.
+
+START=90
+STOP=10
+
+USE_PROCD=1
+PROG=/usr/bin/desmos
+CONF=/etc/desmos/desmos.toml
+
+start_service() {
+    procd_open_instance desmos
+    procd_set_param command "$PROG" up -c "$CONF"
+    procd_set_param respawn 3600 5 5
+    procd_set_param stdout 1
+    procd_set_param stderr 1
+    procd_set_param pidfile /var/run/desmos.pid
+    procd_close_instance
+}
+
+stop_service() {
+    "$PROG" down 2>/dev/null || true
+}
+
+reload_service() {
+    "$PROG" reload 2>/dev/null || true
+}
+
+service_triggers() {
+    procd_add_reload_trigger "desmos"
+}
