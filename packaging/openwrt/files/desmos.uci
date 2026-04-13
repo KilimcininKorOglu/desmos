@@ -1,8 +1,44 @@
-# Desmos bonding VPN — default UCI config.
-# Full UCI bridge added in Task 47.
+# Desmos bonding VPN — UCI configuration.
+#
+# This file is read by the init script and converted to
+# /var/run/desmos.toml at service start time.
+#
+# See desmos.toml.example for the full reference.
 
 config desmos 'main'
     option enabled '0'
     option mode 'client'
-    option config_path '/etc/desmos/desmos.toml'
     option verbose '0'
+    option log_level 'info'
+
+# Server settings (mode = 'server').
+config server 'server'
+    option listen_addr '0.0.0.0'
+    option listen_port '51820'
+    option max_clients '100'
+
+# Client settings (mode = 'client').
+config client 'client'
+    option server_addr ''
+    option server_port '51820'
+    option psk ''
+
+# TUN interface.
+config interface 'tun'
+    option name 'desmos0'
+    option mtu '1420'
+
+# P2P settings.
+config p2p 'p2p'
+    option enabled '0'
+    option stun_server 'stun.l.google.com:19302'
+
+# Bonding strategy.
+config bonding 'bonding'
+    option strategy 'latency_adaptive'
+    option failover_threshold '20'
+
+# Network interfaces to bond (repeatable section).
+# config bond_interface
+#     option name 'eth0'
+#     option weight '100'

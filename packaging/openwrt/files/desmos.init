@@ -1,21 +1,136 @@
 #!/bin/sh /etc/rc.common
 # Desmos bonding VPN — procd init script for OpenWrt.
 #
-# Reads /etc/config/desmos (UCI) and converts it to
-# /var/run/desmos.toml at start time.  Task 47 adds the
-# full UCI bridge; this stub launches desmos with a static
-# config path.
+# Reads /etc/config/desmos (UCI) and emits /var/run/desmos.toml
+# so the desmos binary sees a standard TOML config.
 
 START=90
 STOP=10
 
 USE_PROCD=1
 PROG=/usr/bin/desmos
-CONF=/etc/desmos/desmos.toml
+GENERATED_CONF=/var/run/desmos.toml
+
+# ---- UCI → TOML bridge ------------------------------------------------------
+
+uci_to_toml() {
+    local enabled mode verbose log_level
+    config_load desmos
+
+    # [general]
+    config_get enabled   main enabled   '0'
+    config_get mode      main mode      'client'
+    config_get verbose   main verbose   '0'
+    config_get log_level main log_level 'info'
+
+    if [ "$enabled" != "1" ]; then
+        return 1
+    fi
+
+    cat > "$GENERATED_CONF" <<-TOML
+[general]
+mode = "$mode"
+log_level = "$log_level"
+TOML
+
+    # [server]
+    if [ "$mode" = "server" ]; then
+        local listen_addr listen_port max_clients
+        config_get listen_addr server listen_addr '0.0.0.0'
+        config_get listen_port server listen_port '51820'
+        config_get max_clients server max_clients '100'
+        cat >> "$GENERATED_CONF" <<-TOML
+
+[server]
+listen = "${listen_addr}:${listen_port}"
+max_clients = $max_clients
+TOML
+    fi
+
+    # [client]
+    if [ "$mode" = "client" ]; then
+        local server_addr server_port psk
+        config_get server_addr client server_addr ''
+        config_get server_port client server_port '51820'
+        config_get psk         client psk         ''
+
+        if [ -n "$server_addr" ]; then
+            cat >> "$GENERATED_CONF" <<-TOML
+
+[client]
+server = "${server_addr}:${server_port}"
+TOML
+            if [ -n "$psk" ]; then
+                echo "psk = \"$psk\"" >> "$GENERATED_CONF"
+            fi
+        fi
+    fi
+
+    # [interface]
+    local tun_name tun_mtu
+    config_get tun_name tun name 'desmos0'
+    config_get tun_mtu  tun mtu  '1420'
+    cat >> "$GENERATED_CONF" <<-TOML
+
+[interface]
+name = "$tun_name"
+mtu = $tun_mtu
+TOML
+
+    # [p2p]
+    local p2p_enabled stun_server
+    config_get p2p_enabled p2p enabled     '0'
+    config_get stun_server p2p stun_server 'stun.l.google.com:19302'
+    if [ "$p2p_enabled" = "1" ]; then
+        cat >> "$GENERATED_CONF" <<-TOML
+
+[p2p]
+enabled = true
+stun_server = "$stun_server"
+TOML
+    fi
+
+    # [bonding]
+    local strategy failover_threshold
+    config_get strategy            bonding strategy            'latency_adaptive'
+    config_get failover_threshold  bonding failover_threshold  '20'
+    cat >> "$GENERATED_CONF" <<-TOML
+
+[bonding]
+strategy = "$strategy"
+failover_threshold = $failover_threshold
+TOML
+
+    # [[bonding.interfaces]] — repeatable sections.
+    emit_bond_iface() {
+        local cfg="$1"
+        local iface_name weight
+        config_get iface_name "$cfg" name   ''
+        config_get weight     "$cfg" weight '100'
+        if [ -n "$iface_name" ]; then
+            cat >> "$GENERATED_CONF" <<-TOML
+
+[[bonding.interfaces]]
+name = "$iface_name"
+weight = $weight
+TOML
+        fi
+    }
+    config_foreach emit_bond_iface bond_interface
+
+    return 0
+}
+
+# ---- procd service -----------------------------------------------------------
 
 start_service() {
+    if ! uci_to_toml; then
+        echo "desmos: disabled in UCI config" >&2
+        return 0
+    fi
+
     procd_open_instance desmos
-    procd_set_param command "$PROG" up -c "$CONF"
+    procd_set_param command "$PROG" up -c "$GENERATED_CONF"
     procd_set_param respawn 3600 5 5
     procd_set_param stdout 1
     procd_set_param stderr 1
@@ -25,10 +140,12 @@ start_service() {
 
 stop_service() {
     "$PROG" down 2>/dev/null || true
+    rm -f "$GENERATED_CONF"
 }
 
 reload_service() {
-    "$PROG" reload 2>/dev/null || true
+    stop_service
+    start_service
 }
 
 service_triggers() {

@@ -1,0 +1,110 @@
+<%+header%>
+
+<h2><%:Desmos VPN Status%></h2>
+
+<div class="cbi-map">
+  <fieldset class="cbi-section" id="desmos-status">
+    <legend><%:Service Status%></legend>
+    <table class="table" id="desmos-status-table">
+      <tr class="tr">
+        <td class="td" style="width:200px"><strong><%:Service%></strong></td>
+        <td class="td" id="desmos-service-status">
+          <em><%:Checking...%></em>
+        </td>
+      </tr>
+      <tr class="tr">
+        <td class="td"><strong><%:Mode%></strong></td>
+        <td class="td" id="desmos-mode">-</td>
+      </tr>
+      <tr class="tr">
+        <td class="td"><strong><%:TUN Interface%></strong></td>
+        <td class="td" id="desmos-tun">-</td>
+      </tr>
+      <tr class="tr">
+        <td class="td"><strong><%:Bonding Strategy%></strong></td>
+        <td class="td" id="desmos-strategy">-</td>
+      </tr>
+      <tr class="tr">
+        <td class="td"><strong><%:Connected Interfaces%></strong></td>
+        <td class="td" id="desmos-interfaces">-</td>
+      </tr>
+    </table>
+  </fieldset>
+
+  <fieldset class="cbi-section" id="desmos-actions">
+    <legend><%:Actions%></legend>
+    <div class="cbi-section-node">
+      <input type="button" class="cbi-button cbi-button-apply"
+             value="<%:Restart Service%>"
+             onclick="desmos_restart()" />
+      <input type="button" class="cbi-button cbi-button-reset"
+             value="<%:Stop Service%>"
+             onclick="desmos_stop()" />
+    </div>
+  </fieldset>
+</div>
+
+<script type="text/javascript">
+//<![CDATA[
+function desmos_call(action, callback) {
+    var xhr = new XMLHttpRequest();
+    xhr.open("POST", "<%=luci.dispatcher.build_url('admin', 'services', 'desmos', 'status')%>?action=" + action, true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && callback) callback(xhr);
+    };
+    xhr.send();
+}
+
+function desmos_restart() {
+    var btn = event.target;
+    btn.disabled = true;
+    btn.value = "<%:Restarting...%>";
+    desmos_call("restart", function() {
+        btn.disabled = false;
+        btn.value = "<%:Restart Service%>";
+        desmos_refresh_status();
+    });
+}
+
+function desmos_stop() {
+    var btn = event.target;
+    btn.disabled = true;
+    btn.value = "<%:Stopping...%>";
+    desmos_call("stop", function() {
+        btn.disabled = false;
+        btn.value = "<%:Stop Service%>";
+        desmos_refresh_status();
+    });
+}
+
+function desmos_refresh_status() {
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", "<%=luci.dispatcher.build_url('admin', 'services', 'desmos', 'status')%>?check=1", true);
+    xhr.onreadystatechange = function() {
+        if (xhr.readyState === 4 && xhr.status === 200) {
+            try {
+                var data = JSON.parse(xhr.responseText);
+                document.getElementById("desmos-service-status").innerHTML =
+                    data.running ?
+                    '<span style="color:green"><%:Running%></span>' :
+                    '<span style="color:red"><%:Stopped%></span>';
+                document.getElementById("desmos-mode").textContent = data.mode || "-";
+                document.getElementById("desmos-tun").textContent = data.tun || "-";
+                document.getElementById("desmos-strategy").textContent = data.strategy || "-";
+                document.getElementById("desmos-interfaces").textContent =
+                    data.interfaces ? data.interfaces.join(", ") : "-";
+            } catch(e) {
+                document.getElementById("desmos-service-status").innerHTML =
+                    '<span style="color:gray"><%:Unknown%></span>';
+            }
+        }
+    };
+    xhr.send();
+}
+
+// Initial status check.
+window.addEventListener("load", desmos_refresh_status);
+//]]>
+</script>
+
+<%+footer%>

@@ -11,8 +11,9 @@
 # workflow handles this automatically.
 #
 # Produces a standard IPK that installs the desmos binary into
-# /usr/bin/desmos and a procd init script into /etc/init.d/desmos.
-# UCI config and LuCI app are handled by Task 47.
+# /usr/bin/desmos, a procd init script with UCI→TOML bridge into
+# /etc/init.d/desmos, UCI defaults into /etc/config/desmos, and
+# LuCI controller/model/view for web-based configuration.
 
 include $(TOPDIR)/rules.mk
 
@@ -33,7 +34,7 @@ define Package/desmos
   SUBMENU:=VPN
   TITLE:=Desmos connection bonding VPN
   URL:=https://github.com/KilimcininKorOglu/desmos
-  DEPENDS:=+kmod-tun
+  DEPENDS:=+kmod-tun +luci-base
   PKGARCH:=$(ARCH)
 endef
 
@@ -102,6 +103,21 @@ define Package/desmos/install
 
 	$(INSTALL_DIR) $(1)/etc/config
 	$(INSTALL_CONF) ./files/desmos.uci $(1)/etc/config/desmos
+
+	# LuCI controller.
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/controller
+	$(INSTALL_DATA) ./luci/luasrc/controller/desmos.lua \
+		$(1)/usr/lib/lua/luci/controller/desmos.lua
+
+	# LuCI CBI model.
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/model/cbi
+	$(INSTALL_DATA) ./luci/luasrc/model/cbi/desmos.lua \
+		$(1)/usr/lib/lua/luci/model/cbi/desmos.lua
+
+	# LuCI views.
+	$(INSTALL_DIR) $(1)/usr/lib/lua/luci/view/desmos
+	$(INSTALL_DATA) ./luci/luasrc/view/desmos/status.htm \
+		$(1)/usr/lib/lua/luci/view/desmos/status.htm
 endef
 
 $(eval $(call BuildPackage,desmos))
