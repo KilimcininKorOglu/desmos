@@ -14,7 +14,6 @@ pub mod reactor;
 #[cfg(unix)]
 pub mod socket;
 
-#[cfg(unix)]
 pub mod tun;
 
 #[cfg(target_os = "linux")]
@@ -43,7 +42,6 @@ pub use reactor::RawSource;
 pub use reactor::Reactor;
 #[cfg(unix)]
 pub use socket::UdpSocket;
-#[cfg(unix)]
 pub use tun::Tun;
 
 #[cfg(target_os = "linux")]
@@ -59,3 +57,5 @@ pub use bsd::MacosTun;
 
 #[cfg(target_os = "windows")]
 pub use windows::IocpReactor;
+#[cfg(target_os = "windows")]
+pub use windows::WintunTun;

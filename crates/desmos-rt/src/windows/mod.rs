@@ -1,11 +1,11 @@
-//! Windows IOCP reactor backend.
+//! Windows platform backends.
 //!
-//! Implements the [`crate::reactor::Reactor`] trait via Windows I/O
-//! Completion Ports. Uses hand-declared `extern "system"` bindings
-//! for `CreateIoCompletionPort`, `GetQueuedCompletionStatusEx`,
-//! `WSARecv`, `WSASend`, and friends — no `windows-sys` or `winapi`
-//! crate, matching the rest of `desmos-rt`.
+//! [`reactor::IocpReactor`] implements the [`crate::reactor::Reactor`]
+//! trait via IOCP. [`tun::WintunTun`] wraps the Wintun DLL session
+//! API behind the [`crate::tun::Tun`] trait.
 
 pub mod reactor;
+pub mod tun;
 
 pub use reactor::IocpReactor;
+pub use tun::WintunTun;
