@@ -9,7 +9,6 @@ pub mod pool;
 pub mod ring;
 pub mod timer;
 
-#[cfg(unix)]
 pub mod reactor;
 
 #[cfg(unix)]
@@ -24,6 +23,9 @@ pub mod linux;
 #[cfg(any(target_os = "macos", target_os = "freebsd"))]
 pub mod bsd;
 
+#[cfg(target_os = "windows")]
+pub mod windows;
+
 pub use event::Event;
 pub use event::Interest;
 pub use event::Tag;
@@ -37,9 +39,7 @@ pub use timer::FiredTimer;
 pub use timer::TimerId;
 pub use timer::TimerWheel;
 
-#[cfg(unix)]
 pub use reactor::RawSource;
-#[cfg(unix)]
 pub use reactor::Reactor;
 #[cfg(unix)]
 pub use socket::UdpSocket;
@@ -56,3 +56,6 @@ pub use bsd::KqueueReactor;
 
 #[cfg(target_os = "macos")]
 pub use bsd::MacosTun;
+
+#[cfg(target_os = "windows")]
+pub use windows::IocpReactor;

@@ -10,12 +10,14 @@ use crate::event::Event;
 use crate::event::Interest;
 use crate::event::Token;
 
-/// On Unix, the reactor identifies I/O sources by their raw file descriptor.
-/// Windows support arrives in a later task (`HANDLE`-based IOCP reactor).
+/// On Unix, the reactor identifies I/O sources by their raw file
+/// descriptor. On Windows it uses `RawSocket` (a `SOCKET` handle).
 #[cfg(unix)]
 pub type RawSource = std::os::fd::RawFd;
 
-#[cfg(unix)]
+#[cfg(windows)]
+pub type RawSource = std::os::windows::io::RawSocket;
+
 pub trait Reactor {
     /// Add `source` to the reactor under `token`, watching for `interest`.
     fn register(&mut self, source: RawSource, token: Token, interest: Interest) -> io::Result<()>;
