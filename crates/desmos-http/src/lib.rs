@@ -13,19 +13,26 @@
 //! - [`request`] — Zero-copy request parser (headers + body).
 //! - [`response`] — Response builder with status/headers/body.
 //! - [`server`] — TCP listener and connection loop.
+//! - [`middleware`] — Chain-of-responsibility middleware.
+//! - [`router`] — Path + method routing with parameter extraction.
 
 pub mod errors;
 pub mod headers;
 pub mod method;
+pub mod middleware;
 pub mod request;
 pub mod response;
+pub mod router;
 pub mod server;
 
 pub use errors::HttpError;
 pub use errors::StatusCode;
 pub use headers::Headers;
 pub use method::Method;
+pub use middleware::MiddlewareChain;
 pub use request::Request;
 pub use response::Response;
+pub use router::Params;
+pub use router::Router;
 pub use server::HttpServer;
 pub use server::ServerConfig;
