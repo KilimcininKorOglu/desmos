@@ -111,6 +111,11 @@ impl<'a> Headers<'a> {
         self.get("sec-websocket-key")
     }
 
+    /// Get `Accept` header value.
+    pub fn accept(&self) -> Option<&str> {
+        self.get("accept")
+    }
+
     /// Get `Authorization` header value.
     pub fn authorization(&self) -> Option<&str> {
         self.get("authorization")
