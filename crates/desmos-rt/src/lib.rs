@@ -16,6 +16,9 @@ pub mod socket;
 
 pub mod tun;
 
+#[cfg(unix)]
+pub mod priv_drop;
+
 #[cfg(target_os = "linux")]
 pub mod linux;
 
@@ -43,6 +46,13 @@ pub use reactor::Reactor;
 #[cfg(unix)]
 pub use socket::UdpSocket;
 pub use tun::Tun;
+
+#[cfg(unix)]
+pub use priv_drop::DropConfig;
+#[cfg(unix)]
+pub use priv_drop::Privileged;
+#[cfg(unix)]
+pub use priv_drop::Unprivileged;
 
 #[cfg(target_os = "linux")]
 pub use linux::EpollReactor;
