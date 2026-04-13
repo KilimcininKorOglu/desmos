@@ -120,6 +120,9 @@ dependencies = [
 [[package]]
 name = "desmos-webui"
 version = "0.1.0"
+dependencies = [
+ "desmos-http",
+]
 
 [[package]]
 name = "find-msvc-tools"

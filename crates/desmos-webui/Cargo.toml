@@ -7,3 +7,6 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 description = "Desmos REST API handlers and embedded React SPA."
+
+[dependencies]
+desmos-http = { path = "../desmos-http" }

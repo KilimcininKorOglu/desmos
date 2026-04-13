@@ -23,7 +23,8 @@ ring = "0.17"
 blake3 = "=1.5.4"
 socket2 = "0.5"
 wintun = "0.5"
-argon2 = "0.5"
+# argon2 crate blocked by MSRV 1.75 (all versions pull edition 2024 deps).
+# Using ring::pbkdf2 (PBKDF2-HMAC-SHA256) for password hashing instead.
 
 [profile.release]
 opt-level = 3

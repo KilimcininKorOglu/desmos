@@ -17,7 +17,9 @@
 //! - [`router`] — Path + method routing with parameter extraction.
 //! - [`json`] — JSON encoder/decoder (subset, depth-limited).
 //! - [`websocket`] — RFC 6455 upgrade + frame codec.
+//! - [`basic_auth`] — HTTP Basic Auth + Argon2id verification.
 
+pub mod basic_auth;
 pub mod errors;
 pub mod headers;
 pub mod json;
