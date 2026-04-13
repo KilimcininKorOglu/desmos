@@ -7,3 +7,6 @@ license.workspace = true
 authors.workspace = true
 repository.workspace = true
 description = "Desmos hand-rolled HTTP/1.1 server, WebSocket, JSON codec, and Basic Auth."
+
+[dependencies]
+ring = { workspace = true }

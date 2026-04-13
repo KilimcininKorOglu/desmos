@@ -16,6 +16,7 @@
 //! - [`middleware`] — Chain-of-responsibility middleware.
 //! - [`router`] — Path + method routing with parameter extraction.
 //! - [`json`] — JSON encoder/decoder (subset, depth-limited).
+//! - [`websocket`] — RFC 6455 upgrade + frame codec.
 
 pub mod errors;
 pub mod headers;
@@ -26,6 +27,7 @@ pub mod request;
 pub mod response;
 pub mod router;
 pub mod server;
+pub mod websocket;
 
 pub use errors::HttpError;
 pub use errors::StatusCode;
