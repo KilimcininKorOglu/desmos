@@ -21,6 +21,9 @@ pub mod tun;
 #[cfg(target_os = "linux")]
 pub mod linux;
 
+#[cfg(any(target_os = "macos", target_os = "freebsd"))]
+pub mod bsd;
+
 pub use event::Event;
 pub use event::Interest;
 pub use event::Tag;
@@ -47,3 +50,6 @@ pub use tun::Tun;
 pub use linux::EpollReactor;
 #[cfg(target_os = "linux")]
 pub use linux::LinuxTun;
+
+#[cfg(any(target_os = "macos", target_os = "freebsd"))]
+pub use bsd::KqueueReactor;
