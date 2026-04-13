@@ -1,0 +1,164 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  pfSense package manifest for Desmos bonding VPN.
+
+  This file tells the pfSense package manager how to install,
+  configure, and display the Desmos service in the web GUI.
+  Place it in /usr/local/share/pfSense/packages/ or include
+  it in the pkg metadata.
+
+  Tested against pfSense 2.7+ (FreeBSD 14.x base).
+-->
+<packagegui>
+  <name>desmos</name>
+  <title>Desmos Bonding VPN</title>
+  <category>VPN</category>
+  <version>0.1.0</version>
+  <include_file>/usr/local/pkg/desmos/desmos.inc</include_file>
+
+  <!-- Service registration: appears under Services menu. -->
+  <service>
+    <name>desmos</name>
+    <rcfile>desmos.sh</rcfile>
+    <executable>desmos</executable>
+    <description>Desmos connection bonding VPN daemon</description>
+  </service>
+
+  <!-- Menu entry: Services > Desmos VPN. -->
+  <menu>
+    <name>Desmos VPN</name>
+    <section>Services</section>
+    <url>/pkg_edit.php?xml=desmos.xml</url>
+  </menu>
+
+  <!-- Tab definitions for the config page. -->
+  <tabs>
+    <tab>
+      <text>General</text>
+      <url>/pkg_edit.php?xml=desmos.xml</url>
+      <active/>
+    </tab>
+    <tab>
+      <text>Bonding</text>
+      <url>/pkg_edit.php?xml=desmos_bonding.xml</url>
+    </tab>
+    <tab>
+      <text>Status</text>
+      <url>/desmos_status.php</url>
+    </tab>
+  </tabs>
+
+  <!-- Configuration fields: General tab. -->
+  <fields>
+    <field>
+      <fielddescr>Enable Desmos</fielddescr>
+      <fieldname>enable</fieldname>
+      <type>checkbox</type>
+      <description>Check to enable the Desmos bonding VPN service.</description>
+    </field>
+
+    <field>
+      <fielddescr>Mode</fielddescr>
+      <fieldname>mode</fieldname>
+      <type>select</type>
+      <options>
+        <option><name>Client</name><value>client</value></option>
+        <option><name>Server</name><value>server</value></option>
+      </options>
+      <description>Operating mode.</description>
+    </field>
+
+    <field>
+      <fielddescr>Log Level</fielddescr>
+      <fieldname>log_level</fieldname>
+      <type>select</type>
+      <options>
+        <option><name>Error</name><value>error</value></option>
+        <option><name>Warning</name><value>warn</value></option>
+        <option><name>Info</name><value>info</value></option>
+        <option><name>Debug</name><value>debug</value></option>
+      </options>
+      <description>Logging verbosity.</description>
+    </field>
+
+    <field>
+      <fielddescr>Server Address</fielddescr>
+      <fieldname>server_addr</fieldname>
+      <type>input</type>
+      <size>40</size>
+      <description>
+        Server IP or hostname (client mode only).
+      </description>
+    </field>
+
+    <field>
+      <fielddescr>Server Port</fielddescr>
+      <fieldname>server_port</fieldname>
+      <type>input</type>
+      <size>6</size>
+      <default_value>51820</default_value>
+      <description>UDP port for the VPN tunnel.</description>
+    </field>
+
+    <field>
+      <fielddescr>Pre-Shared Key</fielddescr>
+      <fieldname>psk</fieldname>
+      <type>password</type>
+      <size>40</size>
+      <description>
+        Shared secret for authentication (optional).
+      </description>
+    </field>
+
+    <field>
+      <fielddescr>Listen Address</fielddescr>
+      <fieldname>listen_addr</fieldname>
+      <type>input</type>
+      <size>20</size>
+      <default_value>0.0.0.0</default_value>
+      <description>
+        Bind address for server mode.
+      </description>
+    </field>
+
+    <field>
+      <fielddescr>Max Clients</fielddescr>
+      <fieldname>max_clients</fieldname>
+      <type>input</type>
+      <size>6</size>
+      <default_value>100</default_value>
+      <description>
+        Maximum concurrent clients (server mode).
+      </description>
+    </field>
+
+    <field>
+      <fielddescr>TUN Interface Name</fielddescr>
+      <fieldname>tun_name</fieldname>
+      <type>input</type>
+      <size>20</size>
+      <default_value>desmos0</default_value>
+      <description>Name of the TUN device.</description>
+    </field>
+
+    <field>
+      <fielddescr>MTU</fielddescr>
+      <fieldname>tun_mtu</fieldname>
+      <type>input</type>
+      <size>6</size>
+      <default_value>1420</default_value>
+      <description>TUN interface MTU (576-9000).</description>
+    </field>
+  </fields>
+
+  <!-- Custom PHP include for config save/load and service control. -->
+  <custom_php_install_command>
+    desmos_install();
+  </custom_php_install_command>
+  <custom_php_deinstall_command>
+    desmos_deinstall();
+  </custom_php_deinstall_command>
+  <custom_php_resync_command>
+    desmos_resync();
+  </custom_php_resync_command>
+</packagegui>

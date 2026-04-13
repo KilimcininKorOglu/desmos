@@ -1,0 +1,36 @@
+name: desmos
+version: "0.1.0"
+origin: net/desmos
+comment: Connection bonding VPN
+maintainer: KilimcininKorOglu
+www: https://github.com/KilimcininKorOglu/desmos
+prefix: /usr/local
+desc: <<EOD
+Desmos is a high-performance connection bonding VPN that aggregates
+multiple network links (4G, Wi-Fi, Ethernet, Starlink) into a single
+encrypted tunnel.  Supports round-robin, weighted, latency-adaptive,
+and redundant bonding strategies with sub-second failover.
+EOD
+categories: [net]
+arch: freebsd:*:*
+licenselogic: single
+licenses: [MIT]
+deps:
+  tun_driver:
+    origin: net/tun
+    version: "0"
+scripts:
+  post-install: |
+    mkdir -p /usr/local/etc/desmos
+    if [ ! -f /usr/local/etc/desmos/desmos.toml ]; then
+      cp /usr/local/etc/desmos/desmos.toml.sample /usr/local/etc/desmos/desmos.toml
+      chmod 0600 /usr/local/etc/desmos/desmos.toml
+    fi
+    chmod +x /usr/local/etc/rc.d/desmos.sh
+    echo "desmos installed. Enable with: sysrc desmos_enable=YES"
+  pre-deinstall: |
+    /usr/local/etc/rc.d/desmos.sh stop 2>/dev/null || true
+files:
+  /usr/local/bin/desmos: {uname: root, gname: wheel, perm: "0755"}
+  /usr/local/etc/rc.d/desmos.sh: {uname: root, gname: wheel, perm: "0755"}
+  /usr/local/etc/desmos/desmos.toml.sample: {uname: root, gname: wheel, perm: "0644"}

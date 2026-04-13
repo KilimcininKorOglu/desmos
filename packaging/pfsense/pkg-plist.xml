@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<!--
+  pfSense package plist for Desmos bonding VPN.
+
+  Lists every file the package installs, used by the pfSense
+  package manager for installation and removal tracking.
+-->
+<plist>
+  <!-- Binary. -->
+  <file>/usr/local/bin/desmos</file>
+
+  <!-- RC script (FreeBSD service). -->
+  <file>/usr/local/etc/rc.d/desmos.sh</file>
+
+  <!-- pfSense package manifest. -->
+  <file>/usr/local/share/pfSense/packages/desmos.xml</file>
+  <file>/usr/local/share/pfSense/packages/desmos_bonding.xml</file>
+
+  <!-- PHP include for config sync and service hooks. -->
+  <file>/usr/local/pkg/desmos/desmos.inc</file>
+
+  <!-- Status page. -->
+  <file>/usr/local/www/desmos_status.php</file>
+
+  <!-- Default config template. -->
+  <file>/usr/local/etc/desmos/desmos.toml.sample</file>
+</plist>

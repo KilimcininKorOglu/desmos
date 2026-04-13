@@ -1,0 +1,54 @@
+#!/bin/sh
+
+# PROVIDE: desmos
+# REQUIRE: NETWORKING
+# KEYWORD: shutdown
+#
+# Add the following to /etc/rc.conf to enable desmos:
+#   desmos_enable="YES"
+#
+# Optional rc.conf variables:
+#   desmos_config="/usr/local/etc/desmos/desmos.toml"
+
+. /etc/rc.subr
+
+name="desmos"
+rcvar="desmos_enable"
+
+load_rc_config $name
+
+: ${desmos_enable:="NO"}
+: ${desmos_config:="/usr/local/etc/desmos/desmos.toml"}
+
+command="/usr/local/bin/desmos"
+command_args="up -c ${desmos_config}"
+pidfile="/var/run/desmos.pid"
+
+start_cmd="desmos_start"
+stop_cmd="desmos_stop"
+status_cmd="desmos_status"
+
+desmos_start() {
+    echo "Starting ${name}."
+    /usr/sbin/daemon -f -p ${pidfile} ${command} ${command_args}
+}
+
+desmos_stop() {
+    if [ -f "${pidfile}" ]; then
+        echo "Stopping ${name}."
+        kill $(cat ${pidfile}) 2>/dev/null
+        rm -f ${pidfile}
+    fi
+    /usr/local/bin/desmos down 2>/dev/null || true
+}
+
+desmos_status() {
+    if [ -f "${pidfile}" ] && kill -0 $(cat ${pidfile}) 2>/dev/null; then
+        echo "${name} is running as pid $(cat ${pidfile})."
+    else
+        echo "${name} is not running."
+        return 1
+    fi
+}
+
+run_rc_command "$1"
