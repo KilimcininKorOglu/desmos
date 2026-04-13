@@ -55,6 +55,9 @@ pub use bsd::KqueueReactor;
 #[cfg(target_os = "macos")]
 pub use bsd::MacosTun;
 
+#[cfg(target_os = "freebsd")]
+pub use bsd::FreeBsdTun;
+
 #[cfg(target_os = "windows")]
 pub use windows::IocpReactor;
 #[cfg(target_os = "windows")]
