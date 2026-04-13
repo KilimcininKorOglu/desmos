@@ -1,6 +1,7 @@
 //! Route registration for the Desmos REST API.
 //!
-//! Builds a [`Router`] with all `GET /api/v1/*` endpoints wired up.
+//! Builds a [`Router`] with all `/api/v1/*` endpoints wired up:
+//! GET read endpoints, PUT write endpoints, and DELETE kick.
 //! Authentication middleware is applied to all routes except the
 //! public health and version endpoints.
 
@@ -14,7 +15,7 @@ use desmos_http::router::Router;
 
 /// Build the complete REST API router.
 ///
-/// The returned router handles all `GET /api/v1/*` endpoints.
+/// The returned router handles all `/api/v1/*` endpoints (GET + PUT + DELETE).
 /// Authenticated routes use Basic Auth; health and version are public.
 pub fn build_router(auth_config: AuthConfig) -> Router {
     let mut router = Router::new();
@@ -73,8 +74,38 @@ pub fn build_router(auth_config: AuthConfig) -> Router {
     router.route_with_middleware(
         desmos_http::Method::Get,
         "/api/v1/logs",
-        auth_mw,
+        auth_mw.clone(),
         handlers::logs::list,
+    );
+
+    // ---- Write endpoints (PUT / DELETE) ------------------------------------
+
+    router.route_with_middleware(
+        desmos_http::Method::Put,
+        "/api/v1/interfaces/:name",
+        auth_mw.clone(),
+        handlers::interfaces::update,
+    );
+
+    router.route_with_middleware(
+        desmos_http::Method::Put,
+        "/api/v1/bonding/strategy",
+        auth_mw.clone(),
+        handlers::bonding::set_strategy,
+    );
+
+    router.route_with_middleware(
+        desmos_http::Method::Put,
+        "/api/v1/config",
+        auth_mw.clone(),
+        handlers::config::put,
+    );
+
+    router.route_with_middleware(
+        desmos_http::Method::Delete,
+        "/api/v1/clients/:session_id",
+        auth_mw,
+        handlers::clients::kick,
     );
 
     router
@@ -121,11 +152,20 @@ mod tests {
     }
 
     fn make_request<'a>(method: Method, uri: &'a str, auth: Option<&'a str>) -> Request<'a> {
+        make_request_with_body(method, uri, auth, Vec::new())
+    }
+
+    fn make_request_with_body<'a>(
+        method: Method,
+        uri: &'a str,
+        auth: Option<&'a str>,
+        body: Vec<u8>,
+    ) -> Request<'a> {
         let mut hdrs = vec![Header { name: "Host", value: "localhost" }];
         if let Some(a) = auth {
             hdrs.push(Header { name: "Authorization", value: a });
         }
-        Request { method, uri, headers: Headers::new(hdrs), body: Vec::new() }
+        Request { method, uri, headers: Headers::new(hdrs), body }
     }
 
     fn valid_auth() -> &'static str {
@@ -262,7 +302,93 @@ mod tests {
     #[test]
     fn route_count() {
         let router = build_router(test_auth_config());
-        // health + version + status + interfaces + bonding + stats + clients + config + logs = 9
-        assert_eq!(router.len(), 9);
+        // GET: health + version + status + interfaces + bonding + stats + clients + config + logs = 9
+        // PUT: interfaces/:name + bonding/strategy + config = 3
+        // DELETE: clients/:session_id = 1
+        // Total = 13
+        assert_eq!(router.len(), 13);
+    }
+
+    // ---- Write endpoint routing tests --------------------------------------
+
+    #[test]
+    fn put_interface_requires_auth() {
+        let router = build_router(test_auth_config());
+        let req = make_request_with_body(
+            Method::Put,
+            "/api/v1/interfaces/eth0",
+            None,
+            b"{\"weight\":100}".to_vec(),
+        );
+        let resp = router.dispatch(&req);
+        assert_eq!(resp.status, StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn put_interface_with_auth() {
+        let router = build_router(test_auth_config());
+        let req = make_request_with_body(
+            Method::Put,
+            "/api/v1/interfaces/eth0",
+            Some(valid_auth()),
+            b"{\"weight\":100}".to_vec(),
+        );
+        let resp = router.dispatch(&req);
+        assert_eq!(resp.status, StatusCode::OK);
+    }
+
+    #[test]
+    fn put_bonding_strategy_requires_auth() {
+        let router = build_router(test_auth_config());
+        let req = make_request_with_body(
+            Method::Put,
+            "/api/v1/bonding/strategy",
+            None,
+            b"{\"strategy\":\"redundant\"}".to_vec(),
+        );
+        let resp = router.dispatch(&req);
+        assert_eq!(resp.status, StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn put_bonding_strategy_with_auth() {
+        let router = build_router(test_auth_config());
+        let req = make_request_with_body(
+            Method::Put,
+            "/api/v1/bonding/strategy",
+            Some(valid_auth()),
+            b"{\"strategy\":\"redundant\"}".to_vec(),
+        );
+        let resp = router.dispatch(&req);
+        assert_eq!(resp.status, StatusCode::OK);
+    }
+
+    #[test]
+    fn put_config_requires_auth() {
+        let router = build_router(test_auth_config());
+        let req = make_request_with_body(
+            Method::Put,
+            "/api/v1/config",
+            None,
+            b"[general]\nmode = \"client\"\n".to_vec(),
+        );
+        let resp = router.dispatch(&req);
+        assert_eq!(resp.status, StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn delete_client_requires_auth() {
+        let router = build_router(test_auth_config());
+        let req = make_request(Method::Delete, "/api/v1/clients/42", None);
+        let resp = router.dispatch(&req);
+        assert_eq!(resp.status, StatusCode::UNAUTHORIZED);
+    }
+
+    #[test]
+    fn delete_client_with_auth() {
+        let router = build_router(test_auth_config());
+        let req = make_request(Method::Delete, "/api/v1/clients/42", Some(valid_auth()));
+        let resp = router.dispatch(&req);
+        assert_eq!(resp.status, StatusCode::OK);
     }
 }

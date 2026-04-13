@@ -121,6 +121,7 @@ dependencies = [
 name = "desmos-webui"
 version = "0.1.0"
 dependencies = [
+ "desmos-core",
  "desmos-http",
 ]
 

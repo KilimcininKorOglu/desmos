@@ -16,6 +16,7 @@
 //! keys on the left of `=`, multi-line strings, scientific notation, or
 //! heterogeneous arrays.
 
+pub mod diff;
 pub mod lexer;
 pub mod schema;
 pub mod validate;

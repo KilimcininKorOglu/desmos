@@ -50,7 +50,9 @@ impl Params {
         self.entries.is_empty()
     }
 
-    fn push(&mut self, name: String, value: String) {
+    /// Insert a parameter.  Used by the router internally and by
+    /// tests in downstream crates.
+    pub fn push(&mut self, name: String, value: String) {
         self.entries.push((name, value));
     }
 }

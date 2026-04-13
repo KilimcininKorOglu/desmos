@@ -9,4 +9,5 @@ repository.workspace = true
 description = "Desmos REST API handlers and embedded React SPA."
 
 [dependencies]
+desmos-core = { path = "../desmos-core" }
 desmos-http = { path = "../desmos-http" }
