@@ -1,0 +1,64 @@
+/* Desmos design tokens — see BRANDING.md for the authoritative spec. */
+
+:root {
+  /* Brand colors */
+  --color-primary: #14B8A6;
+  --color-secondary: #06B6D4;
+  --color-accent: #F59E0B;
+
+  /* Dark mode (default) */
+  --color-bg: #0B1220;
+  --color-surface: #111B2E;
+  --color-surface-elev: #18243B;
+  --color-border: #1F2A44;
+  --color-text: #E2E8F0;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+
+  /* Semantic */
+  --color-success: #22C55E;
+  --color-error: #EF4444;
+  --color-warning: #F59E0B;
+  --color-info: #3B82F6;
+
+  /* Link state colors */
+  --color-link-healthy: #22C55E;
+  --color-link-probation: #F59E0B;
+  --color-link-degraded: #F59E0B;
+  --color-link-dead: #EF4444;
+  --color-link-unknown: #94A3B8;
+
+  /* Typography */
+  --font-body: "Inter", system-ui, -apple-system, sans-serif;
+  --font-code: "JetBrains Mono", ui-monospace, monospace;
+
+  /* Spacing (4px base) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Radius */
+  --radius-sm: 3px;
+  --radius: 6px;
+  --radius-lg: 12px;
+
+  /* Shadows (dark mode: none) */
+  --shadow-sm: none;
+  --shadow-md: none;
+}
+
+:root[data-theme="light"] {
+  --color-bg: #F8FAFC;
+  --color-surface: #FFFFFF;
+  --color-surface-elev: #F1F5F9;
+  --color-border: #E2E8F0;
+  --color-text: #0F172A;
+  --color-text-secondary: #475569;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --shadow-md: 0 2px 8px rgba(15, 23, 42, 0.08);
+}
