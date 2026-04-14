@@ -1,14 +1,40 @@
 /**
  * Desmos Web UI — root application shell.
  *
- * Renders a minimal layout with the current page content.
- * Navigation between pages will be added in later tasks;
- * for now the Dashboard is the only page.
+ * Minimal hash-based routing: #dashboard (default), #interfaces, #bonding.
+ * No external router dependency — uses `hashchange` event + useState.
  */
 
+import { useEffect, useState } from "react";
 import { Dashboard } from "./pages/Dashboard";
+import { Interfaces } from "./pages/Interfaces";
+import { Bonding } from "./pages/Bonding";
+
+type Page = "dashboard" | "interfaces" | "bonding";
+
+const NAV_ITEMS: { page: Page; label: string }[] = [
+  { page: "dashboard", label: "Dashboard" },
+  { page: "interfaces", label: "Interfaces" },
+  { page: "bonding", label: "Bonding" },
+];
+
+function getPageFromHash(): Page {
+  const hash = location.hash.replace("#", "");
+  if (hash === "interfaces" || hash === "bonding") return hash;
+  return "dashboard";
+}
 
 export function App() {
+  const [page, setPage] = useState<Page>(getPageFromHash);
+
+  useEffect(() => {
+    function onHashChange() {
+      setPage(getPageFromHash());
+    }
+    window.addEventListener("hashchange", onHashChange);
+    return () => window.removeEventListener("hashchange", onHashChange);
+  }, []);
+
   return (
     <div
       style={{
@@ -29,16 +55,18 @@ export function App() {
         }}
       >
         <div style={{ display: "flex", alignItems: "center", gap: "var(--space-3)" }}>
-          <span
+          <a
+            href="#dashboard"
             style={{
               fontWeight: 700,
               fontSize: "1.125rem",
               color: "var(--color-primary)",
               letterSpacing: "-0.02em",
+              textDecoration: "none",
             }}
           >
             Desmos
-          </span>
+          </a>
           <span
             style={{
               fontSize: "0.6875rem",
@@ -49,6 +77,28 @@ export function App() {
             bond every link
           </span>
         </div>
+
+        {/* Navigation */}
+        <nav style={{ display: "flex", gap: "var(--space-1)" }}>
+          {NAV_ITEMS.map((item) => (
+            <a
+              key={item.page}
+              href={`#${item.page}`}
+              style={{
+                padding: "var(--space-1) var(--space-3)",
+                borderRadius: "var(--radius-sm)",
+                fontSize: "0.8125rem",
+                fontWeight: page === item.page ? 600 : 400,
+                color: page === item.page ? "var(--color-primary)" : "var(--color-text-secondary)",
+                background: page === item.page ? "var(--color-surface-elev)" : "transparent",
+                textDecoration: "none",
+                transition: "background 0.15s, color 0.15s",
+              }}
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
       </header>
 
       {/* Main content */}
@@ -61,7 +111,9 @@ export function App() {
           margin: "0 auto",
         }}
       >
-        <Dashboard />
+        {page === "dashboard" && <Dashboard />}
+        {page === "interfaces" && <Interfaces />}
+        {page === "bonding" && <Bonding />}
       </main>
     </div>
   );
