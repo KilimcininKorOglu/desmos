@@ -7,12 +7,14 @@
 //!
 //! - [`auth`] — Basic Auth gate with public path bypass.
 //! - [`dto`] — JSON envelope helpers (success / error envelopes).
+//! - [`embed`] — Embedded SPA static file serving (compile-time `include_bytes!`).
 //! - [`handlers`] — Per-endpoint GET/PUT/DELETE handlers.
 //! - [`prometheus`] — Prometheus text exposition format renderer.
 //! - [`routes`] — Router builder that wires handlers + middleware.
 
 pub mod auth;
 pub mod dto;
+pub mod embed;
 pub mod handlers;
 pub mod prometheus;
 pub mod routes;

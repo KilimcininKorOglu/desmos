@@ -8,6 +8,10 @@ authors.workspace = true
 repository.workspace = true
 description = "Desmos REST API handlers and embedded React SPA."
 
+[features]
+default = ["embed-frontend"]
+embed-frontend = []
+
 [dependencies]
 desmos-core = { path = "../desmos-core" }
 desmos-http = { path = "../desmos-http" }

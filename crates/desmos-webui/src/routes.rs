@@ -124,6 +124,12 @@ pub fn build_router(auth_config: AuthConfig) -> Router {
         handlers::ws::logs,
     );
 
+    // ---- Embedded SPA routes -----------------------------------------------
+
+    router.get("/", crate::embed::spa_root);
+    // Vite hashed assets live under /assets/*.
+    router.get("/assets/:file", crate::embed::spa_static);
+
     router
 }
 
@@ -322,8 +328,9 @@ mod tests {
         // PUT: interfaces/:name + bonding/strategy + config = 3
         // DELETE: clients/:session_id = 1
         // WS GET: ws/stats + ws/logs = 2
-        // Total = 15
-        assert_eq!(router.len(), 15);
+        // SPA: / + /assets/:file = 2
+        // Total = 17
+        assert_eq!(router.len(), 17);
     }
 
     // ---- Write endpoint routing tests --------------------------------------
