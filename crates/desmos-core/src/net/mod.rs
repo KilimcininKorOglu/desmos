@@ -10,19 +10,26 @@
 //! platforms fall back to `getifaddrs`-only and skip MAC; Windows
 //! returns `NotImplemented` until the cross-platform phase (Task 41+).
 
+pub mod dns;
 pub mod iface;
 pub mod pmtud;
+pub mod resolver_hook;
 pub mod stun;
 
 #[cfg(target_os = "linux")]
 pub mod watcher;
 
+pub use dns::DnsAnswer;
+pub use dns::DnsError;
 pub use iface::list;
 pub use iface::IfaceError;
 pub use iface::IfaceFlags;
 pub use iface::NetworkInterface;
 pub use pmtud::Pmtud;
 pub use pmtud::PmtudState;
+pub use resolver_hook::DnsGuard;
+pub use resolver_hook::DnsOverrideError;
+pub use resolver_hook::DnsState;
 pub use stun::query_binding as stun_query_binding;
 pub use stun::StunError;
 pub use stun::TransactionId as StunTransactionId;
