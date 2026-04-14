@@ -1,7 +1,7 @@
 /**
  * Desmos Web UI — root application shell.
  *
- * Minimal hash-based routing: #dashboard (default), #interfaces, #bonding.
+ * Minimal hash-based routing for all 6 pages.
  * No external router dependency — uses `hashchange` event + useState.
  */
 
@@ -9,18 +9,26 @@ import { useEffect, useState } from "react";
 import { Dashboard } from "./pages/Dashboard";
 import { Interfaces } from "./pages/Interfaces";
 import { Bonding } from "./pages/Bonding";
+import { Connections } from "./pages/Connections";
+import { Logs } from "./pages/Logs";
+import { Settings } from "./pages/Settings";
 
-type Page = "dashboard" | "interfaces" | "bonding";
+type Page = "dashboard" | "interfaces" | "bonding" | "connections" | "logs" | "settings";
+
+const VALID_PAGES: Page[] = ["dashboard", "interfaces", "bonding", "connections", "logs", "settings"];
 
 const NAV_ITEMS: { page: Page; label: string }[] = [
   { page: "dashboard", label: "Dashboard" },
   { page: "interfaces", label: "Interfaces" },
   { page: "bonding", label: "Bonding" },
+  { page: "connections", label: "Connections" },
+  { page: "logs", label: "Logs" },
+  { page: "settings", label: "Settings" },
 ];
 
 function getPageFromHash(): Page {
   const hash = location.hash.replace("#", "");
-  if (hash === "interfaces" || hash === "bonding") return hash;
+  if (VALID_PAGES.includes(hash as Page)) return hash as Page;
   return "dashboard";
 }
 
@@ -114,6 +122,9 @@ export function App() {
         {page === "dashboard" && <Dashboard />}
         {page === "interfaces" && <Interfaces />}
         {page === "bonding" && <Bonding />}
+        {page === "connections" && <Connections />}
+        {page === "logs" && <Logs />}
+        {page === "settings" && <Settings />}
       </main>
     </div>
   );
