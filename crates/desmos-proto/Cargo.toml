@@ -11,3 +11,11 @@ description = "Desmos wire protocol, crypto primitives, and handshake state mach
 [dependencies]
 ring = { workspace = true }
 blake3 = { workspace = true }
+
+[[bench]]
+name = "crypto"
+harness = false
+
+[[bench]]
+name = "wire"
+harness = false

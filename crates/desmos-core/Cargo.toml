@@ -14,3 +14,11 @@ desmos-rt = { path = "../desmos-rt" }
 
 [dev-dependencies]
 ring = { workspace = true }
+
+[[bench]]
+name = "bonding"
+harness = false
+
+[[bench]]
+name = "reorder"
+harness = false
