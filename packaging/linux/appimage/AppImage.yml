@@ -1,0 +1,43 @@
+# AppImageBuilder recipe for Desmos.
+#
+# Build with: appimage-builder --recipe packaging/linux/appimage/AppImage.yml
+#
+# Prerequisites:
+#   - cargo build --release --target x86_64-unknown-linux-gnu
+#   - appimage-builder (pip install appimage-builder)
+
+version: 1
+script:
+  - mkdir -p AppDir/usr/bin
+  - cp target/release/desmos AppDir/usr/bin/desmos
+  - chmod +x AppDir/usr/bin/desmos
+
+AppDir:
+  path: ./AppDir
+
+  app_info:
+    id: io.github.kilimcininkorglu.desmos
+    name: Desmos
+    icon: desmos
+    version: 0.1.0
+    exec: usr/bin/desmos
+    exec_args: $@
+
+  runtime:
+    env:
+      APPDIR_LIBRARY_PATH: $APPDIR/usr/lib
+
+  test:
+    fedora-30:
+      image: appimagecrafters/tests-env:fedora-30
+      command: ./AppRun --version
+    debian-stable:
+      image: appimagecrafters/tests-env:debian-stable
+      command: ./AppRun --version
+    ubuntu-xenial:
+      image: appimagecrafters/tests-env:ubuntu-xenial
+      command: ./AppRun --version
+
+AppImage:
+  arch: x86_64
+  update-information: gh-releases-zsync|KilimcininKorOglu|desmos|latest|desmos-*x86_64.AppImage.zsync

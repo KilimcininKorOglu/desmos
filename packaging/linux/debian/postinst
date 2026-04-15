@@ -1,0 +1,24 @@
+#!/bin/sh
+set -e
+
+case "$1" in
+    configure)
+        # Create desmos system user if it does not exist.
+        if ! getent passwd desmos >/dev/null 2>&1; then
+            adduser --system --group --no-create-home --shell /usr/sbin/nologin desmos
+        fi
+
+        # Ensure config directory permissions.
+        install -dm700 -o root -g root /etc/desmos
+
+        # Enable and start the service.
+        if [ -d /run/systemd/system ]; then
+            systemctl daemon-reload
+            systemctl enable desmos.service
+        fi
+        ;;
+esac
+
+#DEBHELPER#
+
+exit 0

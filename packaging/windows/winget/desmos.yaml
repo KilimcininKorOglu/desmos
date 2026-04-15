@@ -1,0 +1,30 @@
+# winget manifest for Desmos.
+# Submit to https://github.com/microsoft/winget-pkgs
+
+PackageIdentifier: KilimcininKorOglu.Desmos
+PackageVersion: 0.1.0
+PackageLocale: en-US
+Publisher: KilimcininKorOglu
+PublisherUrl: https://github.com/KilimcininKorOglu
+PackageName: Desmos
+PackageUrl: https://github.com/KilimcininKorOglu/desmos
+License: MIT
+LicenseUrl: https://github.com/KilimcininKorOglu/desmos/blob/main/LICENSE
+ShortDescription: Cross-platform connection bonding VPN
+Description: >-
+  Desmos combines multiple network interfaces into a single encrypted
+  tunnel using ChaCha20-Poly1305. Supports four bonding strategies,
+  sub-second failover, and an embedded Web UI.
+Tags:
+  - vpn
+  - networking
+  - bonding
+  - tunnel
+  - rust
+Installers:
+  - Architecture: x64
+    InstallerType: msi
+    InstallerUrl: https://github.com/KilimcininKorOglu/desmos/releases/download/v0.1.0/desmos-0.1.0-x64.msi
+    InstallerSha256: PLACEHOLDER
+ManifestType: singleton
+ManifestVersion: 1.4.0

@@ -1,0 +1,16 @@
+#!/usr/bin/make -f
+
+%:
+	dh $@
+
+override_dh_auto_build:
+	cargo build --release --locked
+
+override_dh_auto_install:
+	install -Dm755 target/release/desmos $(CURDIR)/debian/desmos/usr/bin/desmos
+	install -Dm644 packaging/linux/systemd/desmos.service $(CURDIR)/debian/desmos/lib/systemd/system/desmos.service
+	install -Dm644 desmos.example.toml $(CURDIR)/debian/desmos/etc/desmos/config.toml.example
+	install -dm700 $(CURDIR)/debian/desmos/etc/desmos
+
+override_dh_auto_test:
+	cargo test --release --locked

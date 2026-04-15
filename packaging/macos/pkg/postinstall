@@ -1,0 +1,46 @@
+#!/bin/bash
+# macOS .pkg postinstall script for Desmos.
+#
+# Runs after the flat package installer copies files to disk.
+
+set -e
+
+# Create config directory if it does not exist.
+install -dm700 /etc/desmos
+
+# Create a launchd plist for daemon mode.
+PLIST="/Library/LaunchDaemons/io.github.kilimcininkorglu.desmos.plist"
+
+if [ ! -f "$PLIST" ]; then
+    cat > "$PLIST" << 'PLIST_EOF'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+  "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>io.github.kilimcininkorglu.desmos</string>
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/desmos</string>
+        <string>up</string>
+        <string>--foreground</string>
+        <string>--config</string>
+        <string>/etc/desmos/config.toml</string>
+    </array>
+    <key>RunAtLoad</key>
+    <false/>
+    <key>KeepAlive</key>
+    <dict>
+        <key>SuccessfulExit</key>
+        <false/>
+    </dict>
+    <key>StandardErrorPath</key>
+    <string>/var/log/desmos.log</string>
+</dict>
+</plist>
+PLIST_EOF
+fi
+
+echo "Desmos installed. Configure /etc/desmos/config.toml, then:"
+echo "  sudo launchctl load $PLIST"

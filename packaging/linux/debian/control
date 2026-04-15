@@ -1,0 +1,16 @@
+Source: desmos
+Section: net
+Priority: optional
+Maintainer: KilimcininKorOglu <KilimcininKorOglu>
+Build-Depends: debhelper-compat (= 13), cargo, rustc (>= 1.75)
+Standards-Version: 4.6.2
+Homepage: https://github.com/KilimcininKorOglu/desmos
+
+Package: desmos
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Cross-platform connection bonding VPN
+ Desmos combines multiple network interfaces (Wi-Fi, Ethernet, LTE)
+ into a single encrypted tunnel using ChaCha20-Poly1305. Supports
+ four bonding strategies, sub-second failover, and an embedded Web UI.
+ Single static binary with five external runtime dependencies.

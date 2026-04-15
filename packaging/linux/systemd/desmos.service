@@ -1,0 +1,27 @@
+[Unit]
+Description=Desmos Connection Bonding VPN
+Documentation=https://github.com/KilimcininKorOglu/desmos
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/desmos up --foreground --config /etc/desmos/config.toml
+ExecReload=/usr/bin/desmos reload
+ExecStop=/usr/bin/desmos down
+
+Restart=on-failure
+RestartSec=5
+
+# Security hardening.
+User=root
+Group=root
+AmbientCapabilities=CAP_NET_ADMIN CAP_NET_RAW CAP_NET_BIND_SERVICE
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/etc/desmos /dev/net/tun
+PrivateTmp=yes
+
+[Install]
+WantedBy=multi-user.target
