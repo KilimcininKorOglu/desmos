@@ -163,3 +163,87 @@ jobs:
           name: desmos-aarch64-apple-darwin
           path: dist/*.tar.gz
           retention-days: 30
+
+  # ---- FreeBSD binary ---------------------------------------------------------
+
+  freebsd-binary:
+    name: FreeBSD (x86_64)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install cross
+        uses: taiki-e/install-action@v2
+        with:
+          tool: cross@0.2.5
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-freebsd
+
+      - name: Build
+        run: cross build --release --target x86_64-unknown-freebsd
+
+      - name: Package tarball
+        run: |
+          mkdir -p dist
+          tar czf dist/desmos-x86_64-unknown-freebsd.tar.gz \
+            -C target/x86_64-unknown-freebsd/release desmos
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: desmos-x86_64-unknown-freebsd
+          path: dist/*.tar.gz
+          retention-days: 30
+
+  # ---- Publish GitHub Release -------------------------------------------------
+
+  publish:
+    name: Publish GitHub Release
+    needs: [windows-msi, linux-binaries, macos-binary, freebsd-binary]
+    runs-on: ubuntu-latest
+    if: startsWith(github.ref, 'refs/tags/v')
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts
+
+      - name: Flatten artifacts
+        run: |
+          mkdir -p release
+          find artifacts -type f \( -name '*.tar.gz' -o -name '*.msi' \) \
+            -exec cp {} release/ \;
+
+      - name: Generate SHA-256 checksums
+        run: |
+          cd release
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Extract release notes from CHANGELOG
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          # Extract the section for this version from CHANGELOG.md.
+          awk "/^## \[${VERSION}\]/{found=1; next} /^## \[/{if(found) exit} found" \
+            CHANGELOG.md > RELEASE_NOTES.md
+          if [ ! -s RELEASE_NOTES.md ]; then
+            echo "Release ${GITHUB_REF_NAME}" > RELEASE_NOTES.md
+          fi
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          body_path: RELEASE_NOTES.md
+          files: |
+            release/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
