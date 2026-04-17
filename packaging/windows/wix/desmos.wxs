@@ -66,7 +66,7 @@
         <Component Id="SampleConfig" Guid="b2c3d4e5-f6a7-8901-bcde-f12345678901">
           <File
             Id="SampleToml"
-            Source="..\..\..\config\desmos.toml.example"
+            Source="config\desmos.toml.example"
             Name="desmos.toml.example"
             KeyPath="yes" />
         </Component>
