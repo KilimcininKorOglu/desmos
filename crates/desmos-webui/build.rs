@@ -129,11 +129,13 @@ fn generate_embed_file(dist_dir: &Path, out_dir: &str) {
     writeln!(f, "pub const EMBEDDED_FILE_COUNT: usize = {};", files.len()).unwrap();
     writeln!(f).unwrap();
 
-    // Generate static byte arrays.
+    // Generate static byte arrays. Use `{:?}` (Debug) on the PathBuf so
+    // backslashes in Windows paths are properly escaped in the emitted
+    // Rust string literal — `{}` would produce `C:\a\desmos\...` and
+    // the compiler rejects `\a`/`\d`/etc. as unknown character escapes.
     for (i, (_web_path, disk_path)) in files.iter().enumerate() {
         let abs = fs::canonicalize(disk_path).unwrap();
-        writeln!(f, "static FILE_{i}_DATA: &[u8] = include_bytes!(\"{}\");", abs.display())
-            .unwrap();
+        writeln!(f, "static FILE_{i}_DATA: &[u8] = include_bytes!({abs:?});").unwrap();
     }
 
     writeln!(f).unwrap();

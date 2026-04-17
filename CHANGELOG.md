@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- Security workflow pins `cargo-audit@0.22.1` (was `0.20.0`). The older release cannot parse CVSS 4.0 severity strings, which the RustSec advisory database started emitting in 2026 (e.g. `RUSTSEC-2026-0073` for `libcrux-poly1305`); 0.20.0 fails with `unsupported CVSS version: 4.0` before it can evaluate any advisory against the project's dependency tree. 0.22+ supports CVSS 4.0 natively.
+- `desmos-webui/build.rs` emits the generated `include_bytes!` paths with `{:?}` (Debug) instead of `{}` (Display), so Windows backslashes are escaped in the generated string literal. `{}` produced paths like `D:\a\desmos\...` that the Rust compiler rejected as `unknown character escape: a` / `d` / `w` when compiling `embedded_files.rs`. `{:?}` on `PathBuf` emits `"D:\\a\\desmos\\..."` which compiles unchanged on Windows, macOS, and Linux.
 
 ### Added
 - Release workflow and pre-flight scripts (Task 69). `.github/workflows/release.yml` expanded with FreeBSD x86_64 cross-build job and `publish` job that downloads all artifacts, generates `SHA256SUMS.txt`, extracts release notes from CHANGELOG, and creates a GitHub Release via `softprops/action-gh-release@v2`. Triggers on `v*` tag push. `scripts/release.sh` pre-flight checks: clean tree, main branch, Cargo.toml version match, CHANGELOG entry, `cargo test`, `cargo clippy`, `cargo deny`. `scripts/smoke-test.sh` validates binary on fresh Linux: version output, config generate/validate, help output, binary size under 5 MB target. All 69 tasks complete.
