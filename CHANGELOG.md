@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
+- Windows MSI `packaging/windows/wix/desmos.wxs` config file source path trimmed from `..\..\..\..\config\desmos.toml.example` (four `..`, climbs one level above repo root) to `..\..\..\config\desmos.toml.example` (three `..`, lands on repo root). WiX v4 resolves `<File Source="…">` paths relative to the `.wxs` file's own directory, and `packaging/windows/wix/` is three levels deep. The original four-level path was never validated because Task 49 (Windows Service + MSI) only authored the WiX source; the first actual `wix build` happened on v1.0.0's tag-triggered release workflow, which tripped `error WIX0103: Cannot find the File file`.
 - Release workflow Windows MSI job pins WiX Toolset to `4.0.5` (the last OSMF-free stable, 2024-03-22). `dotnet tool install --global wix` without a version selector now resolves to WiX v7, which refuses to install non-interactively with `error WIX7015: You must accept the Open Source Maintenance Fee (OSMF) EULA`. The step's comment already claimed "Install WiX v4"; the missing `--version 4.0.5` was the actual bug. Prevents `v1.0.0+` tag-triggered release workflows from getting stuck on the MSI job while the Linux/macOS/FreeBSD artifacts succeed.
 
 ## [1.0.0] - 2026-04-17
