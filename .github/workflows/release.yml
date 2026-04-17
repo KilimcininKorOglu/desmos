@@ -44,7 +44,11 @@ jobs:
         shell: pwsh
 
       - name: Install WiX v4
-        run: dotnet tool install --global wix
+        # WiX v5 and later require accepting the Open Source
+        # Maintenance Fee EULA at install time, which `dotnet tool
+        # install` cannot do non-interactively (`WIX7015` error).
+        # Pin to the last OSMF-free stable (v4.0.5, 2024-03-22).
+        run: dotnet tool install --global wix --version 4.0.5
         shell: pwsh
 
       - name: Build MSI

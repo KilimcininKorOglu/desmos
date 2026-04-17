@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- Release workflow Windows MSI job pins WiX Toolset to `4.0.5` (the last OSMF-free stable, 2024-03-22). `dotnet tool install --global wix` without a version selector now resolves to WiX v7, which refuses to install non-interactively with `error WIX7015: You must accept the Open Source Maintenance Fee (OSMF) EULA`. The step's comment already claimed "Install WiX v4"; the missing `--version 4.0.5` was the actual bug. Prevents `v1.0.0+` tag-triggered release workflows from getting stuck on the MSI job while the Linux/macOS/FreeBSD artifacts succeed.
+
 ## [1.0.0] - 2026-04-17
 
 ### Fixed
