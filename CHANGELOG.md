@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- `deny.toml` allows `log` and `thiserror` when pulled through the `wintun` dependency tree, and excludes the `wintun` subtree from the duplicate-versions check. `wintun 0.5` transitively depends on `log`, `thiserror`, `c2rust-bitfields-derive` (syn 1), and `thiserror-impl` (syn 2) — none of which reach the rest of the workspace but all of which triggered `cargo deny check bans` failures on the first CI run. `wrappers = ["wintun"]` on the banned entries + `skip-tree = [{ name = "wintun" }]` scope the exception to Windows-only transitives without loosening the 5-crate rule elsewhere.
+- Security workflow pins `cargo-audit@0.22.1` (was `0.20.0`). The older release cannot parse CVSS 4.0 severity strings, which the RustSec advisory database started emitting in 2026 (e.g. `RUSTSEC-2026-0073` for `libcrux-poly1305`); 0.20.0 fails with `unsupported CVSS version: 4.0` before it can evaluate any advisory against the project's dependency tree. 0.22+ supports CVSS 4.0 natively.
 
 ### Added
 - Release workflow and pre-flight scripts (Task 69). `.github/workflows/release.yml` expanded with FreeBSD x86_64 cross-build job and `publish` job that downloads all artifacts, generates `SHA256SUMS.txt`, extracts release notes from CHANGELOG, and creates a GitHub Release via `softprops/action-gh-release@v2`. Triggers on `v*` tag push. `scripts/release.sh` pre-flight checks: clean tree, main branch, Cargo.toml version match, CHANGELOG entry, `cargo test`, `cargo clippy`, `cargo deny`. `scripts/smoke-test.sh` validates binary on fresh Linux: version output, config generate/validate, help output, binary size under 5 MB target. All 69 tasks complete.

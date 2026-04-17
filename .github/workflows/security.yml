@@ -39,7 +39,10 @@ jobs:
       - name: Install pinned toolchain
         run: rustup show active-toolchain || rustup toolchain install
       - name: Install cargo-audit
+        # 0.20.0 cannot parse CVSS 4.0 severity strings, which the
+        # advisory database started emitting in 2026 (e.g.
+        # RUSTSEC-2026-0073). 0.22+ supports them.
         uses: taiki-e/install-action@v2
         with:
-          tool: cargo-audit@0.20.0
+          tool: cargo-audit@0.22.1
       - run: cargo audit
