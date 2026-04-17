@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- CI cross-build jobs (`aarch64-unknown-linux-musl`, `x86_64-unknown-freebsd`) now pass `--no-default-features` so the `desmos-webui` `build.rs` skips `npm ci`/`npm run build`. The `cross` Docker images do not ship Node.js, which caused the previous `npm: No such file or directory` panic at `build.rs:103`. Native host builds still embed the frontend via the default `embed-frontend` feature.
+- `desmos-rt::windows::tun::WintunTun` updated to the `wintun 0.5` API. `Adapter::create` now returns `Arc<Adapter>` (was `Adapter`), so the `_adapter` field type is `Arc<wintun::Adapter>`. `Session::receive_packet` was renamed to `Session::receive_blocking` in 0.5; `recv()` now calls the new name. No behavior change — the Windows tun backend was added in Task 43 (`b255fc4`) but never built against real wintun until GitHub Actions ran the Windows matrix for the first time.
 
 ### Added
 - Release workflow and pre-flight scripts (Task 69). `.github/workflows/release.yml` expanded with FreeBSD x86_64 cross-build job and `publish` job that downloads all artifacts, generates `SHA256SUMS.txt`, extracts release notes from CHANGELOG, and creates a GitHub Release via `softprops/action-gh-release@v2`. Triggers on `v*` tag push. `scripts/release.sh` pre-flight checks: clean tree, main branch, Cargo.toml version match, CHANGELOG entry, `cargo test`, `cargo clippy`, `cargo deny`. `scripts/smoke-test.sh` validates binary on fresh Linux: version output, config generate/validate, help output, binary size under 5 MB target. All 69 tasks complete.

@@ -22,7 +22,7 @@
 //!
 //! # Thread model
 //!
-//! `wintun::Session::receive_packet` blocks until a packet
+//! `wintun::Session::receive_blocking` blocks until a packet
 //! arrives (or `shutdown()` is called from another thread).
 //! The pipeline typically runs `recv` in a dedicated reader
 //! thread while `send` is called from the outbound path.
@@ -50,9 +50,11 @@ pub struct WintunTun {
     #[cfg(target_os = "windows")]
     session: Arc<wintun::Session>,
     /// Keep the adapter alive so the interface is not torn down
-    /// while the session is open.
+    /// while the session is open. `wintun 0.5` returns the adapter
+    /// wrapped in an `Arc` because `start_session` requires
+    /// `&Arc<Adapter>`.
     #[cfg(target_os = "windows")]
-    _adapter: wintun::Adapter,
+    _adapter: Arc<wintun::Adapter>,
     /// Keep the library handle alive.
     #[cfg(target_os = "windows")]
     _wintun: wintun::Wintun,
@@ -123,7 +125,7 @@ impl Tun for WintunTun {
         if buf.is_empty() {
             return Ok(0);
         }
-        match self.session.receive_packet() {
+        match self.session.receive_blocking() {
             Ok(packet) => {
                 let bytes = packet.bytes();
                 let len = bytes.len().min(buf.len());
