@@ -110,7 +110,7 @@ jobs:
           tool: cross@0.2.5
       - name: Build (cross)
         if: matrix.runner == 'cross'
-        run: cross build --workspace --target ${{ matrix.target }}
+        run: cross build --workspace --target ${{ matrix.target }} --no-default-features
       - name: Build (cargo)
         if: matrix.runner == 'cargo'
         run: cargo build --workspace --target ${{ matrix.target }}

@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- `desmos-http::json` tests use `3.25` instead of `3.14` for fractional-number round-trip assertions. Clippy `-D warnings` flags the old literal as `approx_constant` because it matches `f64::consts::PI` within tolerance; the test only needs any non-integer value, so `3.25` sidesteps the lint without suppressions.
+- CI cross-build jobs (`aarch64-unknown-linux-musl`, `x86_64-unknown-freebsd`) now pass `--no-default-features` so the `desmos-webui` `build.rs` skips `npm ci`/`npm run build`. The `cross` Docker images do not ship Node.js, which caused the previous `npm: No such file or directory` panic at `build.rs:103`. Native host builds still embed the frontend via the default `embed-frontend` feature.
 
 ### Added
 - Release workflow and pre-flight scripts (Task 69). `.github/workflows/release.yml` expanded with FreeBSD x86_64 cross-build job and `publish` job that downloads all artifacts, generates `SHA256SUMS.txt`, extracts release notes from CHANGELOG, and creates a GitHub Release via `softprops/action-gh-release@v2`. Triggers on `v*` tag push. `scripts/release.sh` pre-flight checks: clean tree, main branch, Cargo.toml version match, CHANGELOG entry, `cargo test`, `cargo clippy`, `cargo deny`. `scripts/smoke-test.sh` validates binary on fresh Linux: version output, config generate/validate, help output, binary size under 5 MB target. All 69 tasks complete.
