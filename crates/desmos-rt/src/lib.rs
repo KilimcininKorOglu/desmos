@@ -11,7 +11,6 @@ pub mod timer;
 
 pub mod reactor;
 
-#[cfg(unix)]
 pub mod socket;
 
 pub mod tun;
@@ -43,7 +42,6 @@ pub use timer::TimerWheel;
 
 pub use reactor::RawSource;
 pub use reactor::Reactor;
-#[cfg(unix)]
 pub use socket::UdpSocket;
 pub use tun::Tun;
 
