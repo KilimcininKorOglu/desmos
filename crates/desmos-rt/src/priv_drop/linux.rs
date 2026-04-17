@@ -64,9 +64,11 @@ const SECCOMP_RET_ERRNO_EPERM: u32 = 0x0005_0001;
 const SECCOMP_RET_ALLOW: u32 = 0x7FFF_0000;
 
 /// `AUDIT_ARCH_X86_64`.
+#[cfg(target_arch = "x86_64")]
 const AUDIT_ARCH_X86_64: u32 = 0xC000_003E;
 
 /// `AUDIT_ARCH_AARCH64`.
+#[cfg(target_arch = "aarch64")]
 const AUDIT_ARCH_AARCH64: u32 = 0xC000_00B7;
 
 // seccomp_data offsets.
@@ -78,16 +80,25 @@ const SECCOMP_DATA_ARCH: u32 = 4;
 // ---- Syscall numbers --------------------------------------------------------
 
 // x86_64
+#[cfg(target_arch = "x86_64")]
 const SYS_OPEN_X86: u32 = 2;
+#[cfg(target_arch = "x86_64")]
 const SYS_SOCKET_X86: u32 = 41;
+#[cfg(target_arch = "x86_64")]
 const SYS_EXECVE_X86: u32 = 59;
+#[cfg(target_arch = "x86_64")]
 const SYS_OPENAT_X86: u32 = 257;
+#[cfg(target_arch = "x86_64")]
 const SYS_EXECVEAT_X86: u32 = 322;
 
 // aarch64 — openat is the primary open syscall (no legacy open).
+#[cfg(target_arch = "aarch64")]
 const SYS_OPENAT_ARM64: u32 = 56;
+#[cfg(target_arch = "aarch64")]
 const SYS_EXECVE_ARM64: u32 = 221;
+#[cfg(target_arch = "aarch64")]
 const SYS_SOCKET_ARM64: u32 = 198;
+#[cfg(target_arch = "aarch64")]
 const SYS_EXECVEAT_ARM64: u32 = 281;
 
 // ---- FFI --------------------------------------------------------------------

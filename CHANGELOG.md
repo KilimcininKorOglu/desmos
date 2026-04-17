@@ -6,6 +6,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- `desmos-rt::priv_drop::linux` arch-specific seccomp constants now compile without `dead_code` warnings on both x86_64 and aarch64 Linux runners. Previously, clippy `-D warnings` flagged the unused architecture's constants (`AUDIT_ARCH_AARCH64`, `SYS_*_ARM64` on x86_64 builds, and vice versa) because only one arch's block is referenced via `#[cfg(target_arch = ...)]`. Each constant is now `#[cfg]`-gated per arch, so the compiler only sees the ones it uses.
+
 ### Added
 - Release workflow and pre-flight scripts (Task 69). `.github/workflows/release.yml` expanded with FreeBSD x86_64 cross-build job and `publish` job that downloads all artifacts, generates `SHA256SUMS.txt`, extracts release notes from CHANGELOG, and creates a GitHub Release via `softprops/action-gh-release@v2`. Triggers on `v*` tag push. `scripts/release.sh` pre-flight checks: clean tree, main branch, Cargo.toml version match, CHANGELOG entry, `cargo test`, `cargo clippy`, `cargo deny`. `scripts/smoke-test.sh` validates binary on fresh Linux: version output, config generate/validate, help output, binary size under 5 MB target. All 69 tasks complete.
 - Packaging artifacts for all platforms (Task 68). Debian: `control`, `rules`, `postinst` with system user creation and systemd enable. RPM: `desmos.spec` with `%systemd_post`/`%systemd_preun` macros. AppImage: `AppImage.yml` recipe with multi-distro test targets. systemd: `desmos.service` unit with security hardening (NoNewPrivileges, ProtectSystem=strict, ProtectHome, PrivateTmp, AmbientCapabilities). AUR: `PKGBUILD` for x86_64/aarch64 with cargo build/test. Homebrew: `desmos.rb` formula with caveats and test block. macOS .pkg: `postinstall` script creating launchd plist. winget: `desmos.yaml` manifest template. Joins existing OpenWrt IPK, pfSense, FreeBSD pkg, and Windows MSI packaging from Tasks 46-49.
