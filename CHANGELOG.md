@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-04-17
+
 ### Fixed
 - Release workflow cross-build jobs (`aarch64-unknown-linux-musl` + `x86_64-unknown-freebsd`) now pass `--no-default-features` to `cross build --release`. The `cross` Docker images ship without Node.js, so the `desmos-webui` `embed-frontend` default feature panics at `npm ci` during the build-script stage. Matches the same fix already applied to `.github/workflows/ci.yml` and `.github/workflows/openwrt.yml`. Native Linux musl, macOS, and Windows release jobs keep the Web UI embedded because those runners ship Node.js. Without this fix, tag-triggered release artifacts for aarch64 Linux and FreeBSD would have failed the same way the post-public-flip CI run did.
 - `desmos-rt::socket::tests::wait_for_readable` peek buffer grown from 1 byte to 2 KiB. Windows UDP `recv`/`peek` returns `WSAEMSGSIZE` (`os error 10040`) when the supplied buffer is smaller than the pending datagram, while Unix silently truncates. The 1-byte probe tripped on the 4-byte `ping` datagram exchanged in `send_to_and_recv_from_round_trip_on_loopback`, breaking the whole desmos-rt test binary on `x86_64-pc-windows-msvc`.
