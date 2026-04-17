@@ -36,10 +36,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        # `mips_24kc` (ath79-generic, pre-2018 routers) is not built
+        # in CI: Rust downgraded `mips-unknown-linux-musl` to tier 3
+        # and stopped shipping `rust-std` for 1.75, and the
+        # `cross` 0.2.5 Docker image for that target has the same
+        # limitation. Building would require `-Z build-std` on
+        # nightly, which violates the MSRV 1.75 stable pin. Users
+        # targeting ath79 can run `scripts/build-openwrt.sh` with a
+        # locally installed rust-std build.
         include:
-          - arch: mips_24kc
-            rust_target: mips-unknown-linux-musl
-            sdk_url_suffix: ath79-generic
           - arch: arm_cortex-a7
             rust_target: armv7-unknown-linux-musleabihf
             sdk_url_suffix: ipq40xx-generic

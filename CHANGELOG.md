@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- `desmos-webui/build.rs` emits the generated `include_bytes!` paths with `{:?}` (Debug) instead of `{}` (Display), so Windows backslashes are escaped in the generated string literal. `{}` produced paths like `D:\a\desmos\...` that the Rust compiler rejected as `unknown character escape: a` / `d` / `w` when compiling `embedded_files.rs`. `{:?}` on `PathBuf` emits `"D:\\a\\desmos\\..."` which compiles unchanged on Windows, macOS, and Linux.
+- OpenWrt IPK workflow drops the `mips_24kc` (ath79-generic) matrix entry. `mips-unknown-linux-musl` was downgraded to tier 3 and Rust 1.75 stopped shipping `rust-std` for it; the `cross@0.2.5` Docker image for this target has the same limitation, so building it in CI would need `-Z build-std` on nightly — a hard violation of the MSRV 1.75 stable pin. Users who need ath79 binaries can still run `scripts/build-openwrt.sh` locally with a custom rust-std. `arm_cortex-a7` and `aarch64_cortex-a53` remain in the matrix.
 
 ### Added
 - Release workflow and pre-flight scripts (Task 69). `.github/workflows/release.yml` expanded with FreeBSD x86_64 cross-build job and `publish` job that downloads all artifacts, generates `SHA256SUMS.txt`, extracts release notes from CHANGELOG, and creates a GitHub Release via `softprops/action-gh-release@v2`. Triggers on `v*` tag push. `scripts/release.sh` pre-flight checks: clean tree, main branch, Cargo.toml version match, CHANGELOG entry, `cargo test`, `cargo clippy`, `cargo deny`. `scripts/smoke-test.sh` validates binary on fresh Linux: version output, config generate/validate, help output, binary size under 5 MB target. All 69 tasks complete.
