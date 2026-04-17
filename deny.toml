@@ -18,6 +18,16 @@ allow = [
 
 [bans]
 multiple-versions = "deny"
+# `wintun` (Windows-only, part of the 5-crate budget) pulls several
+# banned crates as transitives (log, thiserror, syn v1 via
+# c2rust-bitfields, syn v2 via thiserror-impl). Those deps are out of
+# our control and do not reach the rest of the workspace, so the whole
+# wintun subtree is excluded from the duplicate-versions check, and
+# `log` / `thiserror` are allowed exclusively when pulled by wintun
+# (see `wrappers` below).
+skip-tree = [
+    { name = "wintun" },
+]
 deny = [
     { name = "tokio" },
     { name = "async-std" },
@@ -28,11 +38,11 @@ deny = [
     { name = "serde" },
     { name = "serde_json" },
     { name = "toml" },
-    { name = "log" },
+    { name = "log", wrappers = ["wintun"] },
     { name = "tracing" },
     { name = "rustls" },
     { name = "anyhow" },
-    { name = "thiserror" },
+    { name = "thiserror", wrappers = ["wintun"] },
     { name = "arc-swap" },
     { name = "once_cell" },
     { name = "parking_lot" },
