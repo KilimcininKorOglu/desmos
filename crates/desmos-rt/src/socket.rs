@@ -182,7 +182,12 @@ mod tests {
         use std::time::Duration;
         use std::time::Instant;
         let deadline = Instant::now() + Duration::from_millis(timeout_ms);
-        let mut probe = [0u8; 1];
+        // Probe buffer must be at least as large as the full datagram
+        // peeked: Windows returns `WSAEMSGSIZE` (os 10040) when the
+        // supplied buffer is smaller than the pending packet, while
+        // Unix silently truncates. 2 KiB covers every datagram these
+        // tests exchange.
+        let mut probe = [0u8; 2048];
         loop {
             match sock.peek(&mut probe) {
                 Ok(_) => return Ok(()),
