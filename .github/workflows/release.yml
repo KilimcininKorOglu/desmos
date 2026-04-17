@@ -111,7 +111,10 @@ jobs:
 
       - name: Build (cross)
         if: matrix.cross
-        run: cross build --release --target ${{ matrix.target }}
+        # `cross` Docker images do not ship Node.js, so the
+        # desmos-webui embed-frontend default feature panics at
+        # npm ci. Disable it for cross-built release artifacts.
+        run: cross build --release --workspace --no-default-features --target ${{ matrix.target }}
 
       - name: Package tarball
         run: |
@@ -183,7 +186,10 @@ jobs:
           key: release-freebsd
 
       - name: Build
-        run: cross build --release --target x86_64-unknown-freebsd
+        # `cross` Docker images do not ship Node.js, so the
+        # desmos-webui embed-frontend default feature panics at
+        # npm ci. Disable it for cross-built release artifacts.
+        run: cross build --release --workspace --no-default-features --target x86_64-unknown-freebsd
 
       - name: Package tarball
         run: |
