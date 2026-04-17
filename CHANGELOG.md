@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Fixed
-- `desmos-rt::priv_drop::linux` arch-specific seccomp constants now compile without `dead_code` warnings on both x86_64 and aarch64 Linux runners. Previously, clippy `-D warnings` flagged the unused architecture's constants (`AUDIT_ARCH_AARCH64`, `SYS_*_ARM64` on x86_64 builds, and vice versa) because only one arch's block is referenced via `#[cfg(target_arch = ...)]`. Each constant is now `#[cfg]`-gated per arch, so the compiler only sees the ones it uses.
+- `desmos-http::json` tests use `3.25` instead of `3.14` for fractional-number round-trip assertions. Clippy `-D warnings` flags the old literal as `approx_constant` because it matches `f64::consts::PI` within tolerance; the test only needs any non-integer value, so `3.25` sidesteps the lint without suppressions.
 
 ### Added
 - Release workflow and pre-flight scripts (Task 69). `.github/workflows/release.yml` expanded with FreeBSD x86_64 cross-build job and `publish` job that downloads all artifacts, generates `SHA256SUMS.txt`, extracts release notes from CHANGELOG, and creates a GitHub Release via `softprops/action-gh-release@v2`. Triggers on `v*` tag push. `scripts/release.sh` pre-flight checks: clean tree, main branch, Cargo.toml version match, CHANGELOG entry, `cargo test`, `cargo clippy`, `cargo deny`. `scripts/smoke-test.sh` validates binary on fresh Linux: version output, config generate/validate, help output, binary size under 5 MB target. All 69 tasks complete.

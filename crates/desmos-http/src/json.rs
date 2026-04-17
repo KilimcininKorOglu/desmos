@@ -487,8 +487,8 @@ mod tests {
 
     #[test]
     fn encode_fractional_number() {
-        let s = encode(&Value::Number(3.14));
-        assert!(s.starts_with("3.14"));
+        let s = encode(&Value::Number(3.25));
+        assert!(s.starts_with("3.25"));
     }
 
     #[test]
@@ -562,7 +562,7 @@ mod tests {
 
     #[test]
     fn decode_float() {
-        assert_eq!(decode("3.14").unwrap(), Value::Number(3.14));
+        assert_eq!(decode("3.25").unwrap(), Value::Number(3.25));
     }
 
     #[test]
@@ -705,7 +705,7 @@ mod tests {
     fn value_accessors() {
         assert!(Value::Null.is_null());
         assert_eq!(Value::Bool(true).as_bool(), Some(true));
-        assert_eq!(Value::Number(3.14).as_f64(), Some(3.14));
+        assert_eq!(Value::Number(3.25).as_f64(), Some(3.25));
         assert_eq!(Value::String("x".into()).as_str(), Some("x"));
         assert!(Value::Array(vec![]).as_array().is_some());
         assert!(Value::Object(BTreeMap::new()).as_object().is_some());
