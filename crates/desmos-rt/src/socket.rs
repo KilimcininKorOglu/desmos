@@ -90,7 +90,87 @@ fn new_socket(addr: SocketAddr) -> io::Result<Sock2Socket> {
     let sock = Sock2Socket::new(domain, Type::DGRAM, Some(Protocol::UDP))?;
     sock.set_nonblocking(true)?;
     sock.set_reuse_address(true)?;
+    #[cfg(target_os = "windows")]
+    disable_udp_connreset_raw(std::os::windows::io::AsRawSocket::as_raw_socket(&sock))?;
     Ok(sock)
+}
+
+/// Disable the Windows `SIO_UDP_CONNRESET` behavior on a bound UDP
+/// socket. On Windows, a UDP `send_to` targeting a closed peer port
+/// triggers an ICMP "port unreachable", and the next `recv_from`
+/// returns `WSAECONNRESET` (`os error 10054`, "An existing connection
+/// was forcibly closed"). Unix silently drops the ICMP and `recv_from`
+/// continues to block until a real packet arrives or a timeout fires.
+///
+/// This function makes Windows match Unix by turning the ioctl off.
+/// It is safe to call on any UDP socket on any platform — on non-Windows
+/// it is a no-op.
+///
+/// Idempotent; callers that cannot prove the socket was created via
+/// [`UdpSocket::bind`] (e.g. p2p helpers that accept
+/// `std::net::UdpSocket` from external code) should call this at entry
+/// to ensure consistent behavior.
+pub fn disable_udp_connreset(sock: &std::net::UdpSocket) -> io::Result<()> {
+    #[cfg(target_os = "windows")]
+    {
+        use std::os::windows::io::AsRawSocket;
+        disable_udp_connreset_raw(sock.as_raw_socket())
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = sock;
+        Ok(())
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn disable_udp_connreset_raw(raw: std::os::windows::io::RawSocket) -> io::Result<()> {
+    use std::ffi::c_void;
+    use std::mem::size_of;
+    use std::ptr;
+
+    // IOC_IN | IOC_VENDOR | 12
+    const SIO_UDP_CONNRESET: u32 = 0x9800_000C;
+
+    // SOCKET is `uintptr_t` in winsock2.h; `RawSocket` is `u64` on 64-bit
+    // Windows and `u32` on 32-bit. Casting through `usize` matches the
+    // platform pointer width.
+    #[allow(non_snake_case)]
+    #[link(name = "ws2_32")]
+    extern "system" {
+        fn WSAIoctl(
+            s: usize,
+            dwIoControlCode: u32,
+            lpvInBuffer: *const c_void,
+            cbInBuffer: u32,
+            lpvOutBuffer: *mut c_void,
+            cbOutBuffer: u32,
+            lpcbBytesReturned: *mut u32,
+            lpOverlapped: *mut c_void,
+            lpCompletionRoutine: *mut c_void,
+        ) -> i32;
+    }
+
+    let new_value: u32 = 0; // FALSE = disable
+    let mut bytes_returned: u32 = 0;
+    let rc = unsafe {
+        WSAIoctl(
+            raw as usize,
+            SIO_UDP_CONNRESET,
+            &new_value as *const u32 as *const c_void,
+            size_of::<u32>() as u32,
+            ptr::null_mut(),
+            0,
+            &mut bytes_returned,
+            ptr::null_mut(),
+            ptr::null_mut(),
+        )
+    };
+    if rc != 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
 }
 
 #[cfg(test)]

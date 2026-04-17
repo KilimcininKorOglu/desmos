@@ -280,6 +280,11 @@ pub fn relay_connect(
     peer_public_key: &[u8; 32],
     deadline: Instant,
 ) -> Result<RelaySession, RelayError> {
+    // On Windows, a UDP send_to to a port with no listener can cause
+    // the next recv_from to return WSAECONNRESET instead of the
+    // expected timeout. Neutralize this once up front; no-op on Unix.
+    desmos_rt::socket::disable_udp_connreset(socket).map_err(|e| RelayError::Io(e.to_string()))?;
+
     let mut send_buf = [0u8; RELAY_HEADER_LEN + 32];
     let n = encode_relay_frame(&mut send_buf, RelayCmd::Register, peer_public_key)
         .ok_or(RelayError::BadFrame("register encode failed"))?;

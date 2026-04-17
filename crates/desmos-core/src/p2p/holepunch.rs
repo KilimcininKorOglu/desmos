@@ -143,6 +143,12 @@ pub fn hole_punch(socket: &UdpSocket, config: &HolePunchConfig) -> Result<Socket
         return Err(P2pError::BadConfig("interval_ms must be > 0"));
     }
 
+    // On Windows, an ICMP port-unreachable in response to a send_to
+    // surfaces as WSAECONNRESET on the next recv_from. That would
+    // misclassify silent-peer timeouts as fatal I/O errors. Disable
+    // the behavior unconditionally; it is a no-op on Unix.
+    desmos_rt::socket::disable_udp_connreset(socket).map_err(|e| P2pError::Io(e.to_string()))?;
+
     let my_nonce = random_nonce();
     let start = Instant::now();
     let deadline = start + Duration::from_millis(config.deadline_ms);
