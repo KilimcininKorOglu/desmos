@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- `desmos-core::daemon` module with `DaemonContext` shared state struct, `OnceLock<Arc<DaemonContext>>` process-global accessor (`init_context`, `context`, `try_context`), `TunnelState` enum (Down/Up/Degraded), `StatsSnapshot` and `InterfaceSnapshot` types for broadcast fan-out. This is the foundation for the daemon wiring sprint (v1.1.0).
+- `pipeline` module is now available on all platforms (removed `#[cfg(unix)]` gate from `lib.rs`). `PipelineMetrics` and `MetricsSnapshot` are pure data types with no platform-specific code; only `run_plaintext_linux` remains `#[cfg(target_os = "linux")]`-gated. Unblocks `DaemonContext` on Windows.
+
 ### Fixed
 - Windows MSI `packaging/windows/wix/desmos.wxs` config file source path changed to `config\desmos.toml.example` (repo-root relative). Empirical finding: WiX v4 resolves `<File Source="…">` relative to `wix build`'s **current working directory**, not the `.wxs` file's own directory. The release workflow runs `wix build` from the repo root, so both this `Source=` and the `$(var.BinaryPath)` preprocessor substitution (`target\x86_64-pc-windows-msvc\release\desmos.exe`) must be expressed repo-root-relative with no `..` segments. Task 49 originally wrote four `..` (assuming .wxs-relative); the first actual `wix build` on v1.0.0's tag-triggered release workflow tripped `error WIX0103: Cannot find the File file` for this entry.
 - Release workflow Windows MSI job pins WiX Toolset to `4.0.5` (the last OSMF-free stable, 2024-03-22). `dotnet tool install --global wix` without a version selector now resolves to WiX v7, which refuses to install non-interactively with `error WIX7015: You must accept the Open Source Maintenance Fee (OSMF) EULA`. The step's comment already claimed "Install WiX v4"; the missing `--version 4.0.5` was the actual bug. Prevents `v1.0.0+` tag-triggered release workflows from getting stuck on the MSI job while the Linux/macOS/FreeBSD artifacts succeed.

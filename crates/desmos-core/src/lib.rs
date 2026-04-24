@@ -18,7 +18,7 @@ pub mod p2p;
 pub mod server;
 pub mod session;
 
-#[cfg(unix)]
+pub mod daemon;
 pub mod pipeline;
 
 pub use errors::{CoreError, Result};
