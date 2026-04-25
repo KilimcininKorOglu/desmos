@@ -234,15 +234,9 @@ fn cmd_clients_list() -> String {
         Some(ctx) => match &ctx.registry {
             Some(reg) => {
                 let ids = reg.table().ids();
-                let arr: Vec<String> = ids
-                    .iter()
-                    .map(|id| format!(r#"{{"id":{}}}"#, id.0))
-                    .collect();
-                ok_json(&format!(
-                    r#"{{"clients":[{}],"count":{}}}"#,
-                    arr.join(","),
-                    ids.len()
-                ))
+                let arr: Vec<String> =
+                    ids.iter().map(|id| format!(r#"{{"id":{}}}"#, id.0)).collect();
+                ok_json(&format!(r#"{{"clients":[{}],"count":{}}}"#, arr.join(","), ids.len()))
             }
             None => ok_json(r#"{"clients":[],"count":0}"#),
         },

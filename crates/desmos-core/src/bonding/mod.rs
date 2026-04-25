@@ -111,12 +111,7 @@ impl Engine {
     /// Clones the current table, applies mutations, and atomically
     /// swaps the result in.  Returns `true` if a matching link was
     /// found (and therefore updated), `false` otherwise.
-    pub fn update_link(
-        &self,
-        name: &str,
-        weight: Option<u32>,
-        enabled: Option<bool>,
-    ) -> bool {
+    pub fn update_link(&self, name: &str, weight: Option<u32>, enabled: Option<bool>) -> bool {
         let snap = self.links_snapshot();
         let mut found = false;
         let updated: Vec<Link> = snap
