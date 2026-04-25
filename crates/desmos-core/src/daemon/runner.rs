@@ -40,6 +40,19 @@ pub fn run_daemon(config: Config) -> io::Result<()> {
 
     let engine = Engine::new(strategy, LinkTable::new(vec![]));
 
+    let registry = if config.general.mode == crate::config::validate::Mode::Server {
+        config.server.as_ref().map(|srv| {
+            use crate::daemon::handshake::load_private_key;
+            let key = load_private_key(&srv.private_key_file).unwrap_or_else(|_| {
+                desmos_proto::crypto::x25519::X25519PrivateKey::from_bytes([0u8; 32])
+            });
+            let known: Vec<desmos_proto::crypto::x25519::PublicKey> = Vec::new();
+            crate::server::ClientRegistry::new(key, known, b"desmos-v1".to_vec(), srv.max_clients)
+        })
+    } else {
+        None
+    };
+
     let ctx = Arc::new(DaemonContext {
         config: RwLock::new(config),
         engine,
@@ -49,7 +62,7 @@ pub fn run_daemon(config: Config) -> io::Result<()> {
         tunnel_state: AtomicU8::new(TunnelState::Down as u8),
         started_at: Instant::now(),
         sockets: RwLock::new(HashMap::new()),
-        registry: None,
+        registry,
     });
 
     init_context(ctx);
@@ -95,7 +108,44 @@ pub fn run_daemon(config: Config) -> io::Result<()> {
                 }
             }
         }
-        crate::config::validate::Mode::Server | crate::config::validate::Mode::P2p => {
+        crate::config::validate::Mode::Server => {
+            let cfg = ctx_ref.config.read().unwrap();
+            let server_cfg = cfg.server.as_ref().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidInput, "server mode requires [server] config")
+            })?;
+            let listen: std::net::SocketAddr = server_cfg.listen.parse().map_err(|_| {
+                io::Error::new(
+                    io::ErrorKind::InvalidInput,
+                    format!("bad listen address: {}", server_cfg.listen),
+                )
+            })?;
+
+            let registry = ctx_ref.registry.as_ref().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::Other, "ClientRegistry not initialized")
+            })?;
+
+            let state_fn = |s| ctx_ref.set_tunnel_state(s);
+            #[cfg(target_os = "linux")]
+            super::server_loop::run_server_linux(
+                listen,
+                registry,
+                &ctx_ref.metrics,
+                mtu,
+                &state_fn,
+            )?;
+            #[cfg(not(target_os = "linux"))]
+            {
+                let _ = (listen, registry, mtu, state_fn);
+                let poll_interval = Duration::from_millis(250);
+                loop {
+                    if signal::is_shutdown_requested() {
+                        break;
+                    }
+                    std::thread::sleep(poll_interval);
+                }
+            }
+        }
+        crate::config::validate::Mode::P2p => {
             let poll_interval = Duration::from_millis(250);
             loop {
                 if signal::is_shutdown_requested() {

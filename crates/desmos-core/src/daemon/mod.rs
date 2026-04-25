@@ -13,6 +13,7 @@ pub mod client;
 pub mod handshake;
 pub mod ipc;
 pub mod runner;
+pub mod server_loop;
 
 use std::collections::HashMap;
 use std::sync::atomic::AtomicU8;
