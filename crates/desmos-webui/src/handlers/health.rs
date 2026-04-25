@@ -18,9 +18,13 @@ pub fn get(_req: &Request<'_>, _params: &Params) -> Response {
     let mut obj = BTreeMap::new();
     obj.insert("status".into(), Value::String("ok".into()));
     obj.insert("version".into(), Value::String(VERSION.into()));
-    // TODO: wire to real daemon state when available.
-    obj.insert("tunnel_state".into(), Value::String("unknown".into()));
-    obj.insert("uptime_s".into(), Value::Number(0.0));
+
+    let (state, uptime) = match desmos_core::daemon::try_context() {
+        Some(ctx) => (ctx.tunnel_state().as_str(), ctx.uptime_secs() as f64),
+        None => ("unknown", 0.0),
+    };
+    obj.insert("tunnel_state".into(), Value::String(state.into()));
+    obj.insert("uptime_s".into(), Value::Number(uptime));
 
     let json = encode(&Value::Object(obj));
     let mut r = Response::ok();
