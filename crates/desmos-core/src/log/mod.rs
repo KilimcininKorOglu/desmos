@@ -8,6 +8,7 @@
 //! The logger is process-global. Use [`set_min_level`], [`set_sinks`],
 //! and [`snapshot_ring`] to configure and inspect it.
 
+pub mod broadcast_sink;
 pub mod redact;
 pub mod ring;
 pub mod sink;
