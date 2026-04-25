@@ -1,6 +1,5 @@
 //! Subcommand implementations. Every command is a small struct that
-//! implements [`crate::Command`]. Task 5 shipped stubs; Task 14 replaced
-//! the `up` stub with the real plaintext-mode implementation.
+//! implements [`crate::Command`].
 
 pub mod clients;
 pub mod interfaces;
@@ -11,6 +10,7 @@ use std::io::Write;
 
 use crate::dispatch::Command;
 use crate::errors::CliResult;
+use crate::ipc_client;
 use crate::output::Writer;
 use crate::parser::GlobalFlags;
 
@@ -19,7 +19,6 @@ pub use interfaces::InterfacesCommand;
 pub use stats::StatsCommand;
 pub use up::UpCommand;
 
-/// Returns the list of standard commands registered with the dispatcher.
 pub fn all() -> Vec<Box<dyn Command>> {
     vec![
         Box::new(UpCommand),
@@ -41,14 +40,23 @@ fn is_json_invocation(subargs: &[String], globals: &GlobalFlags) -> bool {
     globals.json || subargs.iter().any(|a| a == "--json")
 }
 
-fn stub_run(name: &str, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-    if is_json_invocation(subargs, globals) {
-        let _ = writeln!(std::io::stdout(), "{{}}");
-    } else {
-        let w = Writer::from_globals(globals);
-        w.println(&format!("desmos: `{name}` not yet implemented"));
+fn ipc_run(command: &str, subargs: &[String], globals: &GlobalFlags) -> CliResult {
+    match ipc_client::send_command(command) {
+        Ok(response) => {
+            if is_json_invocation(subargs, globals) {
+                let _ = writeln!(std::io::stdout(), "{response}");
+            } else {
+                let w = Writer::from_globals(globals);
+                w.println(&response);
+            }
+            Ok(0)
+        }
+        Err(msg) => {
+            let w = Writer::from_globals(globals);
+            w.error(&msg);
+            Ok(1)
+        }
     }
-    Ok(0)
 }
 
 pub struct DownCommand;
@@ -60,7 +68,7 @@ impl Command for DownCommand {
         "Tear the tunnel down"
     }
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        stub_run(self.name(), subargs, globals)
+        ipc_run(self.name(), subargs, globals)
     }
 }
 
@@ -73,13 +81,7 @@ impl Command for StatusCommand {
         "Show tunnel and link status"
     }
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        if is_json_invocation(subargs, globals) {
-            let _ = writeln!(std::io::stdout(), "{{}}");
-        } else {
-            let w = Writer::from_globals(globals);
-            w.println("desmos status: tunnel not running");
-        }
-        Ok(0)
+        ipc_run(self.name(), subargs, globals)
     }
 }
 
@@ -92,7 +94,7 @@ impl Command for ReloadCommand {
         "Hot-reload the running configuration"
     }
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        stub_run(self.name(), subargs, globals)
+        ipc_run(self.name(), subargs, globals)
     }
 }
 
@@ -105,7 +107,7 @@ impl Command for ConfigCommand {
         "Validate, show, or edit configuration"
     }
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        stub_run(self.name(), subargs, globals)
+        ipc_run(self.name(), subargs, globals)
     }
 }
 
@@ -118,7 +120,7 @@ impl Command for BondingCommand {
         "Show or hot-switch the bonding strategy"
     }
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        stub_run(self.name(), subargs, globals)
+        ipc_run(self.name(), subargs, globals)
     }
 }
 
@@ -131,7 +133,7 @@ impl Command for LogsCommand {
         "Tail recent log entries"
     }
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        stub_run(self.name(), subargs, globals)
+        ipc_run(self.name(), subargs, globals)
     }
 }
 
@@ -144,7 +146,7 @@ impl Command for WebuiCommand {
         "Manage the embedded Web UI (password, bind address)"
     }
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        stub_run(self.name(), subargs, globals)
+        ipc_run(self.name(), subargs, globals)
     }
 }
 

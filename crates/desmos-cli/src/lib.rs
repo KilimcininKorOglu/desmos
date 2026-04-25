@@ -5,6 +5,7 @@
 pub mod commands;
 pub mod dispatch;
 pub mod errors;
+pub mod ipc_client;
 pub mod output;
 pub mod parser;
 

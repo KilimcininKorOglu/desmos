@@ -211,20 +211,17 @@ mod tests {
     }
 
     #[test]
-    fn dispatch_status_json_returns_zero() {
+    fn dispatch_status_returns_one_without_daemon() {
         let d = Dispatcher::with_standard_commands();
         let code = d.dispatch(vec!["desmos".into(), "status".into(), "--json".into()]);
-        // --json comes after the subcommand so it is part of subargs. Status
-        // sees `globals.json = false` but inspects its own subargs. Both
-        // cases should succeed with exit 0.
-        assert_eq!(code, 0);
+        assert_eq!(code, 1);
     }
 
     #[test]
-    fn dispatch_status_global_json_returns_zero() {
+    fn dispatch_status_global_json_returns_one_without_daemon() {
         let d = Dispatcher::with_standard_commands();
         let code = d.dispatch(vec!["desmos".into(), "--json".into(), "status".into()]);
-        assert_eq!(code, 0);
+        assert_eq!(code, 1);
     }
 
     #[test]
