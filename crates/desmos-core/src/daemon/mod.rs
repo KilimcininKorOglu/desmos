@@ -11,6 +11,7 @@
 
 pub mod client;
 pub mod handshake;
+pub mod ipc;
 pub mod runner;
 
 use std::collections::HashMap;
