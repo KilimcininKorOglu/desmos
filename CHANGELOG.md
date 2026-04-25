@@ -7,6 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Daemon runner skeleton (`desmos-core::daemon::runner::run_daemon`). Constructs `DaemonContext` from config, installs signal handlers, enters a 250ms poll loop checking `is_shutdown_requested()`. `desmos up` without `--mode` now loads a TOML config (`--config=<path>` or `-c`, defaults to `/etc/desmos/desmos.toml`), validates it, and calls the daemon runner. `--mode plaintext` remains completely untouched.
 - `desmos-rt::signal` cross-platform shutdown signal module. Unix installs `SIGTERM`/`SIGINT` handlers via raw `sigaction` FFI; Windows installs `SetConsoleCtrlHandler`. Process-global `AtomicBool` polled by the reactor loop via `is_shutdown_requested()`. `request_shutdown()` for programmatic stop (IPC `down` command, Windows Service SCM handler). No new dependencies.
 - `desmos-core::daemon` module with `DaemonContext` shared state struct, `OnceLock<Arc<DaemonContext>>` process-global accessor (`init_context`, `context`, `try_context`), `TunnelState` enum (Down/Up/Degraded), `StatsSnapshot` and `InterfaceSnapshot` types for broadcast fan-out. This is the foundation for the daemon wiring sprint (v1.1.0).
 - `pipeline` module is now available on all platforms (removed `#[cfg(unix)]` gate from `lib.rs`). `PipelineMetrics` and `MetricsSnapshot` are pure data types with no platform-specific code; only `run_plaintext_linux` remains `#[cfg(target_os = "linux")]`-gated. Unblocks `DaemonContext` on Windows.

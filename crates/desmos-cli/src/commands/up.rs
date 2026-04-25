@@ -27,13 +27,9 @@ impl Command for UpCommand {
             Some(other) => Err(CliError::InvalidFlagValue {
                 flag: "--mode".to_string(),
                 value: other.to_string(),
-                reason: "only `plaintext` is supported in Phase 1",
+                reason: "supported modes: plaintext",
             }),
-            None => {
-                let w = Writer::from_globals(globals);
-                w.error("desmos up: production mode not yet wired. Use `--mode plaintext` for the Phase 1 demo.");
-                Ok(1)
-            }
+            None => run_encrypted(&args, globals),
         }
     }
 }
@@ -41,6 +37,7 @@ impl Command for UpCommand {
 #[derive(Debug, Default)]
 struct UpArgs {
     mode: Option<String>,
+    config_path: Option<String>,
     tun_name: Option<String>,
     listen: Option<String>,
     peer: Option<String>,
@@ -58,9 +55,12 @@ fn parse_up_args(subargs: &[String]) -> Result<UpArgs, CliError> {
             out.listen = Some(value.to_string());
         } else if let Some(value) = tok.strip_prefix("--peer=") {
             out.peer = Some(value.to_string());
+        } else if let Some(value) = tok.strip_prefix("--config=") {
+            out.config_path = Some(value.to_string());
         } else {
             match tok.as_str() {
                 "--mode" => out.mode = Some(take_value("--mode", &mut iter)?),
+                "--config" | "-c" => out.config_path = Some(take_value("--config", &mut iter)?),
                 "--tun" => out.tun_name = Some(take_value("--tun", &mut iter)?),
                 "--listen" => out.listen = Some(take_value("--listen", &mut iter)?),
                 "--peer" => out.peer = Some(take_value("--peer", &mut iter)?),
@@ -77,6 +77,32 @@ fn parse_up_args(subargs: &[String]) -> Result<UpArgs, CliError> {
 
 fn take_value(flag: &str, iter: &mut std::slice::Iter<'_, String>) -> Result<String, CliError> {
     iter.next().cloned().ok_or_else(|| CliError::MissingFlagValue(flag.to_string()))
+}
+
+fn run_encrypted(args: &UpArgs, globals: &GlobalFlags) -> CliResult {
+    let config_path = args
+        .config_path
+        .clone()
+        .or_else(|| globals.config_path.as_ref().map(|p| p.display().to_string()))
+        .unwrap_or_else(|| "/etc/desmos/desmos.toml".to_string());
+
+    let toml_str = std::fs::read_to_string(&config_path).map_err(|e| {
+        CliError::SubcommandFailed(format!("cannot read config {config_path}: {e}"))
+    })?;
+
+    let value = desmos_core::config::parse(&toml_str)
+        .map_err(|e| CliError::SubcommandFailed(format!("config parse error: {e}")))?;
+
+    let config = desmos_core::config::validate::Config::from_value(&value)
+        .map_err(|e| CliError::SubcommandFailed(format!("config validation error: {e}")))?;
+
+    let w = Writer::from_globals(globals);
+    w.success(&format!("desmos up: config={config_path} mode={}", config.general.mode.as_str()));
+
+    desmos_core::daemon::runner::run_daemon(config)
+        .map_err(|e| CliError::SubcommandFailed(format!("daemon: {e}")))?;
+
+    Ok(0)
 }
 
 #[cfg(target_os = "linux")]
