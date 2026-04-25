@@ -107,7 +107,62 @@ impl Command for ConfigCommand {
         "Validate, show, or edit configuration"
     }
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        ipc_run(self.name(), subargs, globals)
+        let sub = subargs.iter().find(|a| !a.starts_with('-'));
+        match sub.map(|s| s.as_str()) {
+            Some("generate") => config_generate(),
+            Some("validate") => config_validate(subargs, globals),
+            _ => ipc_run(self.name(), subargs, globals),
+        }
+    }
+}
+
+fn config_generate() -> CliResult {
+    let example = include_str!("../../../../config/desmos.toml.example");
+    let _ = writeln!(std::io::stdout(), "{example}");
+    Ok(0)
+}
+
+fn config_validate(subargs: &[String], globals: &GlobalFlags) -> CliResult {
+    let w = Writer::from_globals(globals);
+    let path = subargs
+        .iter()
+        .position(|a| a == "--config" || a == "-c")
+        .and_then(|i| subargs.get(i + 1))
+        .map(|s| s.as_str());
+
+    let path = match path {
+        Some(p) => p,
+        None => {
+            w.error("desmos config validate: missing --config <path>");
+            return Ok(64);
+        }
+    };
+
+    let content = match std::fs::read_to_string(path) {
+        Ok(c) => c,
+        Err(e) => {
+            w.error(&format!("desmos config validate: cannot read {path}: {e}"));
+            return Ok(1);
+        }
+    };
+
+    let value = match desmos_core::config::parse(&content) {
+        Ok(v) => v,
+        Err(e) => {
+            w.error(&format!("desmos config validate: parse error: {e}"));
+            return Ok(1);
+        }
+    };
+
+    match desmos_core::config::validate::Config::from_value(&value) {
+        Ok(_) => {
+            w.println("configuration is valid");
+            Ok(0)
+        }
+        Err(e) => {
+            w.error(&format!("desmos config validate: {e}"));
+            Ok(1)
+        }
     }
 }
 
