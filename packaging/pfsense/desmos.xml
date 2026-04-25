@@ -13,7 +13,7 @@
   <name>desmos</name>
   <title>Desmos Bonding VPN</title>
   <category>VPN</category>
-  <version>0.1.0</version>
+  <version>1.0.0</version>
   <include_file>/usr/local/pkg/desmos/desmos.inc</include_file>
 
   <!-- Service registration: appears under Services menu. -->

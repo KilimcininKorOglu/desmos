@@ -19,7 +19,7 @@ AppDir:
     id: io.github.kilimcininkorglu.desmos
     name: Desmos
     icon: desmos
-    version: 0.1.0
+    version: 1.0.0
     exec: usr/bin/desmos
     exec_args: $@
 

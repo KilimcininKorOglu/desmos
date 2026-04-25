@@ -27,7 +27,7 @@ BINARY="${1:-$PROJECT_ROOT/target/x86_64-unknown-freebsd/release/desmos}"
 OUTPUT_DIR="${2:-$PROJECT_ROOT/dist/freebsd}"
 
 PKG_NAME="desmos"
-PKG_VERSION="0.1.0"
+PKG_VERSION="1.0.0"
 
 # ---- Helpers -----------------------------------------------------------------
 

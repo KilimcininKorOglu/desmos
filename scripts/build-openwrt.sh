@@ -88,7 +88,7 @@ for arch in $TARGETS; do
     info "Building IPK for $arch (Rust target: $target)"
 
     # Copy source into SDK build dir (OpenWrt expects it there).
-    build_dir="$SDK_ROOT/build_dir/target-*/desmos-0.1.0"
+    build_dir="$SDK_ROOT/build_dir/target-*/desmos-1.0.0"
     # shellcheck disable=SC2086
     mkdir -p "$SDK_ROOT/dl"
 

@@ -5,7 +5,7 @@
   Build with:
     wix build desmos.wxs -o desmos.msi \
       -d BinaryPath="..\..\..\target\x86_64-pc-windows-msvc\release\desmos.exe" \
-      -d Version="0.1.0"
+      -d Version="1.0.0"
 
   The MSI:
     1. Installs desmos.exe to Program Files\Desmos\

@@ -6,7 +6,7 @@
 class Desmos < Formula
   desc "Cross-platform connection bonding VPN"
   homepage "https://github.com/KilimcininKorOglu/desmos"
-  url "https://github.com/KilimcininKorOglu/desmos/archive/v0.1.0.tar.gz"
+  url "https://github.com/KilimcininKorOglu/desmos/archive/v1.0.0.tar.gz"
   sha256 "PLACEHOLDER"
   license "MIT"
 
