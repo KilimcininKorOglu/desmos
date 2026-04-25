@@ -6,6 +6,9 @@
 //! per-OS TUN adapters. All use hand-declared `extern "C"` bindings
 //! — no `libc` crate.
 
+#[cfg(target_os = "macos")]
+pub mod bind_device;
+
 pub mod reactor;
 
 #[cfg(target_os = "macos")]

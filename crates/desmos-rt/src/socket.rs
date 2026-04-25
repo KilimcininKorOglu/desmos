@@ -47,6 +47,15 @@ impl UdpSocket {
         Ok(Self { inner: sock.into(), bound_device: Some(interface.to_string()) })
     }
 
+    #[cfg(target_os = "macos")]
+    pub fn bind_on_interface(interface: &str) -> io::Result<Self> {
+        let addr: SocketAddr = "0.0.0.0:0".parse().expect("valid literal");
+        let sock = new_socket(addr)?;
+        crate::bsd::bind_device::bind_to_interface(sock.as_raw_fd(), interface)?;
+        sock.bind(&addr.into())?;
+        Ok(Self { inner: sock.into(), bound_device: Some(interface.to_string()) })
+    }
+
     /// Local address the kernel assigned to this socket.
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
         self.inner.local_addr()
