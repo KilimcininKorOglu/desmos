@@ -97,6 +97,7 @@ pub fn run_client_linux(
     crate::log!(Level::Info, "daemon", "tun created", iface = tun.name());
 
     let (mut sockets, session) = setup_sockets_and_handshake(client_cfg, engine)?;
+    drop_privileges_if_root()?;
     set_tunnel_state(crate::daemon::TunnelState::Up);
 
     let mut reactor = EpollReactor::new()?;
@@ -123,6 +124,7 @@ pub fn run_client_kqueue(
     crate::log!(Level::Info, "daemon", "tun created", iface = tun.name());
 
     let (mut sockets, session) = setup_sockets_and_handshake(client_cfg, engine)?;
+    drop_privileges_if_root()?;
     set_tunnel_state(crate::daemon::TunnelState::Up);
 
     let mut reactor = KqueueReactor::new()?;
@@ -149,6 +151,7 @@ pub fn run_client_kqueue(
     crate::log!(Level::Info, "daemon", "tun created", iface = tun.name());
 
     let (mut sockets, session) = setup_sockets_and_handshake(client_cfg, engine)?;
+    drop_privileges_if_root()?;
     set_tunnel_state(crate::daemon::TunnelState::Up);
 
     let mut reactor = KqueueReactor::new()?;
@@ -156,6 +159,31 @@ pub fn run_client_kqueue(
 
     set_tunnel_state(crate::daemon::TunnelState::Down);
     Ok(())
+}
+
+// ---- Privilege drop -------------------------------------------------------
+
+#[cfg(unix)]
+fn drop_privileges_if_root() -> io::Result<()> {
+    let uid = unsafe { libc_getuid() };
+    if uid != 0 {
+        return Ok(());
+    }
+    let drop_cfg = desmos_rt::DropConfig { uid: 65534, gid: 65534 };
+    let priv_state = desmos_rt::Privileged::new(drop_cfg);
+    let _unpriv = priv_state.drop_privileges()?;
+    crate::log!(Level::Info, "daemon", "privileges dropped", uid = 65534, gid = 65534);
+    Ok(())
+}
+
+#[cfg(unix)]
+extern "C" {
+    fn getuid() -> u32;
+}
+
+#[cfg(unix)]
+unsafe fn libc_getuid() -> u32 {
+    getuid()
 }
 
 // ---- Shared setup (sockets + handshake, no TUN) ---------------------------
