@@ -34,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `interfaces.update` REST handler (`PUT /api/v1/interfaces/:name`) now calls `Engine::update_link()` to mutate weight and enabled (health) state of a single link in-place. Returns 404 if the link name is not found, 503 if the daemon is not running. Previous behavior was an echo-back stub.
 - `Engine::update_link(name, weight, enabled)` added to the bonding engine. Clones the current `LinkTable` snapshot, applies per-link mutations, and atomically swaps the updated table via `swap_links()`.
 - `desmos config generate` outputs the bundled example config (`include_str!` from `config/desmos.toml.example`). `desmos config validate --config <path>` parses and validates the file locally without needing a running daemon. Other `desmos config` subcommands still route through IPC. Smoke test now passes 6/6.
+- `desmos stats` wired to IPC (`stats` command). Returns uptime, client count, bytes in/out, and bonding strategy from `DaemonContext`. Previously returned a hardcoded "daemon not reachable" stub.
 - Updated stale module documentation in `iface.rs` and `net/mod.rs` to reflect Windows `GetAdaptersAddresses` implementation.
 - Removed stale TODO comments and placeholder constants from handler and socket modules.
 

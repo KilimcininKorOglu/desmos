@@ -1,7 +1,6 @@
-//! `desmos up` subcommand. Phase 1 ships the hidden `--mode plaintext`
-//! variant that wires TUN ↔ UDP without any crypto so we can exercise
-//! the runtime plumbing end-to-end. Phase 2 replaces plaintext with the
-//! Noise IK handshake.
+//! `desmos up` subcommand. Default mode starts the encrypted daemon
+//! (Noise IK handshake + bonding). `--mode plaintext` is a Linux-only
+//! debug variant that wires TUN ↔ UDP without crypto.
 
 use crate::dispatch::Command;
 use crate::errors::CliError;
@@ -140,7 +139,7 @@ fn run_plaintext(args: &UpArgs, globals: &GlobalFlags) -> CliResult {
 #[cfg(not(target_os = "linux"))]
 fn run_plaintext(_args: &UpArgs, globals: &GlobalFlags) -> CliResult {
     let w = Writer::from_globals(globals);
-    w.error("desmos up --mode plaintext: Phase 1 runtime ships Linux only. Other platforms land in Phase 6.");
+    w.error("desmos up --mode plaintext: only available on Linux. Use encrypted mode (no --mode flag) on other platforms.");
     Ok(1)
 }
 

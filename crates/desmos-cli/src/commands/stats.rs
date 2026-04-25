@@ -3,12 +3,8 @@
 //! Shows uptime, connected-client count, total bytes in / out,
 //! handshake attempts, handshake rejects, and the current
 //! bonding strategy. Renders as either a human-readable block
-//! or a flat JSON object.
-//!
-//! Like `desmos clients`, the IPC side of the command is
-//! pending the daemon runner — `run()` reports "daemon not
-//! reachable" until that lands. The formatters are pure and
-//! fully tested here.
+//! or a flat JSON object. Sends the `stats` IPC command to the
+//! running daemon.
 
 use std::io::Write;
 
@@ -47,8 +43,20 @@ impl Command for StatsCommand {
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
         let json_mode = globals.json || subargs.iter().any(|a| a == "--json");
         let writer = Writer::from_globals(globals);
-        emit_error(&writer, json_mode, "desmos: daemon not reachable (server mode not running)");
-        Ok(1)
+        match crate::ipc_client::send_command("stats") {
+            Ok(response) => {
+                if json_mode {
+                    let _ = writeln!(std::io::stdout(), "{response}");
+                } else {
+                    writer.println(&response);
+                }
+                Ok(0)
+            }
+            Err(msg) => {
+                emit_error(&writer, json_mode, &msg);
+                Ok(1)
+            }
+        }
     }
 }
 

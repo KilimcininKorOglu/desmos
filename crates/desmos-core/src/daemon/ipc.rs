@@ -131,6 +131,7 @@ fn dispatch_command(line: &str) -> String {
         "interfaces" => cmd_interfaces(),
         "clients_list" => cmd_clients_list(),
         "clients_kick" => cmd_clients_kick(line),
+        "stats" => cmd_stats(),
         other => error_json(&format!("unknown command: {other}")),
     }
 }
@@ -258,6 +259,23 @@ fn cmd_clients_kick(line: &str) -> String {
             }
             None => error_json("daemon not in server mode"),
         },
+        None => error_json("daemon not running"),
+    }
+}
+
+#[cfg(unix)]
+fn cmd_stats() -> String {
+    match super::try_context() {
+        Some(ctx) => {
+            let uptime = ctx.uptime_secs();
+            let strategy = ctx.engine.current_strategy_name();
+            let snap = ctx.metrics.snapshot();
+            let clients = ctx.registry.as_ref().map_or(0, |r| r.active_clients());
+            ok_json(&format!(
+                r#"{{"uptime_s":{uptime},"clients_connected":{clients},"total_bytes_in":{},"total_bytes_out":{},"bonding_strategy":"{strategy}"}}"#,
+                snap.bytes_received, snap.bytes_sent
+            ))
+        }
         None => error_json("daemon not running"),
     }
 }
