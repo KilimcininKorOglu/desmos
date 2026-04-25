@@ -10,6 +10,7 @@
 //! ```
 
 use crate::dto::{error_envelope, success_envelope};
+use desmos_core::session::SessionId;
 use desmos_http::json::Value;
 use desmos_http::request::Request;
 use desmos_http::response::Response;
@@ -18,9 +19,25 @@ use std::collections::BTreeMap;
 
 /// GET /api/v1/clients
 pub fn list(_req: &Request<'_>, _params: &Params) -> Response {
-    // TODO: wire to real server session list.
+    let clients = match desmos_core::daemon::try_context() {
+        Some(ctx) => match &ctx.registry {
+            Some(reg) => {
+                let ids = reg.table().ids();
+                ids.into_iter()
+                    .map(|id| {
+                        let mut entry = BTreeMap::new();
+                        entry.insert("session_id".into(), Value::Number(id.0 as f64));
+                        Value::Object(entry)
+                    })
+                    .collect::<Vec<_>>()
+            }
+            None => vec![],
+        },
+        None => vec![],
+    };
+
     let mut data = BTreeMap::new();
-    data.insert("clients".into(), Value::Array(vec![]));
+    data.insert("clients".into(), Value::Array(clients));
 
     let json = success_envelope(Value::Object(data));
     let mut r = Response::ok();
@@ -55,9 +72,21 @@ pub fn kick(_req: &Request<'_>, params: &Params) -> Response {
         }
     };
 
-    // TODO: wire to real ClientRegistry::remove_client.
-    // For now, report success.  In production, a 404 would be returned
-    // if the session doesn't exist.
+    let kicked = match desmos_core::daemon::try_context() {
+        Some(ctx) => match &ctx.registry {
+            Some(reg) => reg.remove_client(SessionId(session_id)).is_some(),
+            None => false,
+        },
+        None => false,
+    };
+
+    if !kicked {
+        let body = error_envelope("not_found", "Session not found or daemon not in server mode");
+        let mut r = Response::not_found();
+        r.body_json(&body);
+        return r;
+    }
+
     let mut data = BTreeMap::new();
     data.insert("session_id".into(), Value::Number(session_id as f64));
     data.insert("kicked".into(), Value::Bool(true));
@@ -76,7 +105,6 @@ pub fn kick(_req: &Request<'_>, params: &Params) -> Response {
 mod tests {
     use super::*;
     use desmos_http::headers::Headers;
-    use desmos_http::json;
     use desmos_http::method::Method;
 
     fn make_delete(uri: &str) -> Request<'_> {
@@ -84,16 +112,12 @@ mod tests {
     }
 
     #[test]
-    fn kick_valid_session() {
+    fn kick_without_daemon_returns_not_found() {
         let req = make_delete("/api/v1/clients/42");
         let mut params = Params::new();
         params.push("session_id".into(), "42".into());
         let resp = kick(&req, &params);
-        assert_eq!(resp.status, desmos_http::StatusCode::OK);
-        let v = json::decode(std::str::from_utf8(resp.body()).unwrap()).unwrap();
-        let data = v.get("data").unwrap();
-        assert_eq!(data.get("session_id").unwrap().as_f64(), Some(42.0));
-        assert_eq!(data.get("kicked").unwrap().as_bool(), Some(true));
+        assert_eq!(resp.status, desmos_http::StatusCode::NOT_FOUND);
     }
 
     #[test]

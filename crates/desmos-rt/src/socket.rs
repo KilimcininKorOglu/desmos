@@ -235,11 +235,6 @@ fn windows_bind_to_interface(
     raw: std::os::windows::io::RawSocket,
     if_index: u32,
 ) -> io::Result<()> {
-    use std::ffi::c_void;
-    use std::mem::size_of;
-    use std::ptr;
-
-    const SIO_SET_WFP_CONNECTION_REDIRECT_RECORDS: u32 = 0; // placeholder
     const IP_UNICAST_IF: i32 = 31;
     const IPPROTO_IP: i32 = 0;
 

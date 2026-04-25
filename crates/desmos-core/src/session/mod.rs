@@ -32,6 +32,7 @@ pub mod keepalive;
 pub mod manager;
 pub mod rekey;
 
+pub use desmos_proto::SessionId;
 pub use manager::AnySession;
 pub use manager::SessionTable;
 pub use rekey::REKEY_INTERVAL_MS;
@@ -51,7 +52,6 @@ use desmos_proto::handshake::HandshakeError;
 use desmos_proto::handshake::Initiator;
 use desmos_proto::handshake::Responder;
 use desmos_proto::handshake::TransportKeys;
-use desmos_proto::SessionId;
 
 // ---------------------------------------------------------------------------
 // Error taxonomy

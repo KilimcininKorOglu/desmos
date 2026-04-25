@@ -413,7 +413,7 @@ mod tests {
         let router = build_router(test_auth_config());
         let req = make_request(Method::Delete, "/api/v1/clients/42", Some(valid_auth()));
         let resp = router.dispatch(&req);
-        assert_eq!(resp.status, StatusCode::OK);
+        assert_eq!(resp.status, StatusCode::NOT_FOUND);
     }
 
     // ---- WebSocket routing tests -------------------------------------------

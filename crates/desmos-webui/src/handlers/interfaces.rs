@@ -131,8 +131,8 @@ pub fn update(req: &Request<'_>, params: &Params) -> Response {
         }
     }
 
-    // TODO: wire to real interface update logic.
-    // For now, echo back the accepted update.
+    // Engine exposes swap_links() for bulk replacement; per-link
+    // weight/enabled mutation needs a future LinkTable API extension.
     let mut data = BTreeMap::new();
     data.insert("name".into(), Value::String(name.to_owned()));
     data.insert("updated".into(), Value::Bool(true));
