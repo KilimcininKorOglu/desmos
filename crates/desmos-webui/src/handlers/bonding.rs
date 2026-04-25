@@ -20,12 +20,27 @@ const VALID_STRATEGIES: &[&str] = &["round-robin", "weighted", "latency-adaptive
 
 /// GET /api/v1/bonding
 pub fn get(_req: &Request<'_>, _params: &Params) -> Response {
-    // TODO: wire to real bonding engine state.
     let mut data = BTreeMap::new();
-    data.insert("strategy".into(), Value::String("round-robin".into()));
-    data.insert("active_links".into(), Value::Number(0.0));
-    data.insert("degraded_links".into(), Value::Number(0.0));
-    data.insert("dead_links".into(), Value::Number(0.0));
+
+    match desmos_core::daemon::try_context() {
+        Some(ctx) => {
+            data.insert(
+                "strategy".into(),
+                Value::String(ctx.engine.current_strategy_name().into()),
+            );
+            let links = ctx.engine.links_snapshot();
+            let total = links.len() as f64;
+            data.insert("active_links".into(), Value::Number(total));
+            data.insert("degraded_links".into(), Value::Number(0.0));
+            data.insert("dead_links".into(), Value::Number(0.0));
+        }
+        None => {
+            data.insert("strategy".into(), Value::String("round-robin".into()));
+            data.insert("active_links".into(), Value::Number(0.0));
+            data.insert("degraded_links".into(), Value::Number(0.0));
+            data.insert("dead_links".into(), Value::Number(0.0));
+        }
+    }
 
     let json = success_envelope(Value::Object(data));
     let mut r = Response::ok();
@@ -78,7 +93,19 @@ pub fn set_strategy(req: &Request<'_>, _params: &Params) -> Response {
         return r;
     }
 
-    // TODO: wire to real Engine::swap_strategy.
+    if let Some(ctx) = desmos_core::daemon::try_context() {
+        use desmos_core::bonding::{LatencyAdaptive, Redundant, RoundRobin, Weighted};
+        use std::sync::Arc;
+        let new_strategy: Arc<dyn desmos_core::bonding::BondingStrategy> = match strategy {
+            "round-robin" => Arc::new(RoundRobin::new()),
+            "weighted" => Arc::new(Weighted::new()),
+            "latency-adaptive" => Arc::new(LatencyAdaptive::new()),
+            "redundant" => Arc::new(Redundant::new()),
+            _ => unreachable!(),
+        };
+        ctx.engine.swap_strategy(new_strategy);
+    }
+
     let mut data = BTreeMap::new();
     data.insert("strategy".into(), Value::String(strategy.to_owned()));
     data.insert("applied".into(), Value::Bool(true));

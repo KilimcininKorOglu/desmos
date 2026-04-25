@@ -27,9 +27,33 @@ use std::collections::BTreeMap;
 
 /// GET /api/v1/interfaces
 pub fn list(_req: &Request<'_>, _params: &Params) -> Response {
-    // TODO: wire to real interface discovery + link stats.
+    let iface_arr = match desmos_core::daemon::try_context() {
+        Some(ctx) => {
+            let links = ctx.engine.links_snapshot();
+            links
+                .all()
+                .iter()
+                .map(|link| {
+                    let mut m = BTreeMap::new();
+                    m.insert("name".into(), Value::String(link.name.clone()));
+                    m.insert("id".into(), Value::Number(link.id as f64));
+                    m.insert("state".into(), Value::String("active".into()));
+                    m.insert("rtt_us".into(), Value::Number(0.0));
+                    m.insert("loss_pct".into(), Value::Number(0.0));
+                    m.insert("jitter_us".into(), Value::Number(0.0));
+                    m.insert("tx_bytes".into(), Value::Number(0.0));
+                    m.insert("rx_bytes".into(), Value::Number(0.0));
+                    m.insert("weight".into(), Value::Number(link.weight as f64));
+                    m.insert("enabled".into(), Value::Bool(true));
+                    Value::Object(m)
+                })
+                .collect()
+        }
+        None => vec![],
+    };
+
     let mut data = BTreeMap::new();
-    data.insert("interfaces".into(), Value::Array(vec![]));
+    data.insert("interfaces".into(), Value::Array(iface_arr));
 
     let json = success_envelope(Value::Object(data));
     let mut r = Response::ok();

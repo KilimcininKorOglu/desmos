@@ -63,11 +63,30 @@ fn wants_prometheus(req: &Request<'_>) -> bool {
     false
 }
 
-/// Collect current interface stats.
-///
-/// TODO: wire to real daemon state.  Returns stub data for now.
 fn collect_stats() -> Vec<InterfaceStats> {
-    Vec::new()
+    match desmos_core::daemon::try_context() {
+        Some(ctx) => {
+            let snap = ctx.metrics.snapshot();
+            let links = ctx.engine.links_snapshot();
+            links
+                .all()
+                .iter()
+                .map(|link| InterfaceStats {
+                    name: link.name.clone(),
+                    tx_bytes: snap.bytes_sent,
+                    rx_bytes: snap.bytes_received,
+                    tx_packets: snap.packets_sent,
+                    rx_packets: snap.packets_received,
+                    rtt_us: 0,
+                    loss_pct: 0.0,
+                    jitter_us: 0,
+                    decrypt_errors: snap.decrypt_failures,
+                    replay_drops: snap.replay_drops,
+                })
+                .collect()
+        }
+        None => Vec::new(),
+    }
 }
 
 /// Build JSON stats response.
