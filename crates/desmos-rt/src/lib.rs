@@ -11,6 +11,7 @@ pub mod timer;
 
 pub mod reactor;
 
+pub mod signal;
 pub mod socket;
 
 pub mod tun;
