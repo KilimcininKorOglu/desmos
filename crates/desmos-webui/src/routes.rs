@@ -358,7 +358,7 @@ mod tests {
             b"{\"weight\":100}".to_vec(),
         );
         let resp = router.dispatch(&req);
-        assert_eq!(resp.status, StatusCode::OK);
+        assert_eq!(resp.status, StatusCode::SERVICE_UNAVAILABLE);
     }
 
     #[test]

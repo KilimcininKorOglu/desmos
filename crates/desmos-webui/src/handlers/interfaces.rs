@@ -131,16 +131,34 @@ pub fn update(req: &Request<'_>, params: &Params) -> Response {
         }
     }
 
-    // Engine exposes swap_links() for bulk replacement; per-link
-    // weight/enabled mutation needs a future LinkTable API extension.
+    let weight = obj.get("weight").and_then(|v| v.as_f64()).map(|f| f as u32);
+    let enabled = obj.get("enabled").and_then(|v| v.as_bool());
+
+    let ctx = match desmos_core::daemon::try_context() {
+        Some(c) => c,
+        None => {
+            let body = error_envelope("no_daemon", "Daemon not running");
+            let mut r = Response::new(desmos_http::StatusCode::SERVICE_UNAVAILABLE);
+            r.body_json(&body);
+            return r;
+        }
+    };
+
+    if !ctx.engine.update_link(name, weight, enabled) {
+        let body = error_envelope("not_found", "No link with that name");
+        let mut r = Response::not_found();
+        r.body_json(&body);
+        return r;
+    }
+
     let mut data = BTreeMap::new();
     data.insert("name".into(), Value::String(name.to_owned()));
     data.insert("updated".into(), Value::Bool(true));
-    if let Some(w) = obj.get("weight") {
-        data.insert("weight".into(), w.clone());
+    if let Some(w) = weight {
+        data.insert("weight".into(), Value::Number(w as f64));
     }
-    if let Some(e) = obj.get("enabled") {
-        data.insert("enabled".into(), e.clone());
+    if let Some(e) = enabled {
+        data.insert("enabled".into(), Value::Bool(e));
     }
 
     let json = success_envelope(Value::Object(data));
@@ -169,23 +187,12 @@ mod tests {
     }
 
     #[test]
-    fn update_valid_weight() {
+    fn update_without_daemon_returns_503() {
         let req = make_put("/api/v1/interfaces/eth0", "{\"weight\":150}");
         let mut params = Params::new();
         params.push("name".into(), "eth0".into());
         let resp = update(&req, &params);
-        assert_eq!(resp.status, desmos_http::StatusCode::OK);
-        let v = json::decode(std::str::from_utf8(resp.body()).unwrap()).unwrap();
-        assert_eq!(v.get("data").unwrap().get("name").unwrap().as_str(), Some("eth0"));
-    }
-
-    #[test]
-    fn update_valid_enabled() {
-        let req = make_put("/api/v1/interfaces/wlan0", "{\"enabled\":false}");
-        let mut params = Params::new();
-        params.push("name".into(), "wlan0".into());
-        let resp = update(&req, &params);
-        assert_eq!(resp.status, desmos_http::StatusCode::OK);
+        assert_eq!(resp.status, desmos_http::StatusCode::SERVICE_UNAVAILABLE);
     }
 
     #[test]

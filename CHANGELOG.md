@@ -31,6 +31,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `desmos clients list` and `desmos clients kick <id>` now communicate with the running daemon via IPC (`clients_list` / `clients_kick` commands) instead of returning hardcoded "daemon not reachable". IPC server reads from `ClientRegistry::table().ids()` for listing and calls `ClientRegistry::remove_client()` for kicks.
 - `clients.list` REST handler reads active sessions from `DaemonContext.registry.table().ids()` instead of returning a static empty array. `clients.kick` REST handler calls `ClientRegistry::remove_client()` and returns 404 when session not found or daemon is not in server mode.
 - `SessionId` re-exported from `desmos_core::session` for downstream crate access.
+- `interfaces.update` REST handler (`PUT /api/v1/interfaces/:name`) now calls `Engine::update_link()` to mutate weight and enabled (health) state of a single link in-place. Returns 404 if the link name is not found, 503 if the daemon is not running. Previous behavior was an echo-back stub.
+- `Engine::update_link(name, weight, enabled)` added to the bonding engine. Clones the current `LinkTable` snapshot, applies per-link mutations, and atomically swaps the updated table via `swap_links()`.
 - Updated stale module documentation in `iface.rs` and `net/mod.rs` to reflect Windows `GetAdaptersAddresses` implementation.
 - Removed stale TODO comments and placeholder constants from handler and socket modules.
 
