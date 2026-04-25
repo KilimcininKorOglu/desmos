@@ -9,6 +9,7 @@
 //! The pattern mirrors the existing global logger in
 //! `crate::log::LOGGER`.
 
+pub mod handshake;
 pub mod runner;
 
 use std::collections::HashMap;
