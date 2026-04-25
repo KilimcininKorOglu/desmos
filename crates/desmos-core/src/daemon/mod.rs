@@ -9,6 +9,7 @@
 //! The pattern mirrors the existing global logger in
 //! `crate::log::LOGGER`.
 
+pub mod client;
 pub mod handshake;
 pub mod runner;
 
@@ -104,9 +105,7 @@ impl DaemonContext {
 static CTX: OnceLock<Arc<DaemonContext>> = OnceLock::new();
 
 pub fn init_context(ctx: Arc<DaemonContext>) {
-    if CTX.set(ctx).is_err() {
-        panic!("DaemonContext already initialized");
-    }
+    let _ = CTX.set(ctx);
 }
 
 pub fn context() -> &'static Arc<DaemonContext> {

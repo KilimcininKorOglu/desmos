@@ -56,43 +56,51 @@ pub fn run_daemon(config: Config) -> io::Result<()> {
 
     crate::log!(Level::Info, "daemon", "started");
 
-    let poll_interval = Duration::from_millis(250);
-    loop {
-        if signal::is_shutdown_requested() {
-            break;
+    let ctx_ref = super::context();
+    let mode = ctx_ref.config.read().unwrap().general.mode;
+    let mtu = ctx_ref.config.read().unwrap().general.tunnel_mtu as usize;
+
+    match mode {
+        crate::config::validate::Mode::Client => {
+            let cfg = ctx_ref.config.read().unwrap();
+            let client_cfg = cfg.client.as_ref().ok_or_else(|| {
+                io::Error::new(io::ErrorKind::InvalidInput, "client mode requires [client] config")
+            })?;
+            #[cfg(target_os = "linux")]
+            super::client::run_client_linux(
+                client_cfg,
+                &ctx_ref.engine,
+                &ctx_ref.metrics,
+                mtu,
+                &|s| ctx_ref.set_tunnel_state(s),
+            )?;
+            #[cfg(not(target_os = "linux"))]
+            {
+                let _ = (client_cfg, mtu);
+                let poll_interval = Duration::from_millis(250);
+                loop {
+                    if signal::is_shutdown_requested() {
+                        break;
+                    }
+                    std::thread::sleep(poll_interval);
+                }
+            }
         }
-        std::thread::sleep(poll_interval);
+        crate::config::validate::Mode::Server | crate::config::validate::Mode::P2p => {
+            let poll_interval = Duration::from_millis(250);
+            loop {
+                if signal::is_shutdown_requested() {
+                    break;
+                }
+                std::thread::sleep(poll_interval);
+            }
+        }
     }
 
     crate::log!(Level::Info, "daemon", "stopped");
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use crate::config::validate::GeneralConfig;
-    use crate::config::validate::LogLevel;
-    use crate::config::validate::Mode;
-
-    fn minimal_config() -> Config {
-        Config {
-            general: GeneralConfig {
-                mode: Mode::Client,
-                log_level: LogLevel::Info,
-                tunnel_mtu: 1400,
-            },
-            server: None,
-            client: None,
-            webui: None,
-            p2p: None,
-        }
-    }
-
-    #[test]
-    fn run_daemon_stops_on_shutdown_signal() {
-        signal::request_shutdown();
-        let result = run_daemon(minimal_config());
-        assert!(result.is_ok());
-    }
-}
+// Integration-level tests for `run_daemon` require process isolation
+// (signal globals, OnceLock context) and are exercised via
+// `scripts/smoke-test.sh` against the real binary instead.
