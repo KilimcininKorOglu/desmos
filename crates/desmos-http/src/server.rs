@@ -51,17 +51,27 @@ impl Default for ServerConfig {
 /// A handler function that processes an HTTP request and returns a response.
 pub type Handler = fn(&Request<'_>) -> Response;
 
+/// Called after sending a 101 Switching Protocols response. Receives
+/// the raw TCP stream (already past the HTTP upgrade) and the original
+/// request URI so the callback can distinguish endpoints.
+pub type UpgradeHandler = fn(TcpStream, &str);
+
 /// A minimal HTTP/1.1 server.
 pub struct HttpServer {
     listener: TcpListener,
     config: ServerConfig,
     handler: Handler,
+    on_upgrade: Option<UpgradeHandler>,
 }
 
 impl HttpServer {
     /// Bind to the given address and create the server.
     pub fn bind<A: ToSocketAddrs>(addr: A, handler: Handler) -> io::Result<Self> {
         Self::bind_with_config(addr, handler, ServerConfig::default())
+    }
+
+    pub fn set_upgrade_handler(&mut self, handler: UpgradeHandler) {
+        self.on_upgrade = Some(handler);
     }
 
     /// Bind with a custom configuration.
@@ -72,7 +82,7 @@ impl HttpServer {
     ) -> io::Result<Self> {
         let listener = TcpListener::bind(addr)?;
         listener.set_nonblocking(false)?;
-        Ok(Self { listener, config, handler })
+        Ok(Self { listener, config, handler, on_upgrade: None })
     }
 
     /// Return the local address the server is bound to.
@@ -207,10 +217,20 @@ impl HttpServer {
 
         // Dispatch to handler.
         let response = (self.handler)(&req);
+        let is_upgrade = response.status == StatusCode(101);
+        let uri = req.uri.to_string();
 
         // Write response.
         stream.write_all(&response.to_bytes()).map_err(HttpError::Io)?;
         stream.flush().map_err(HttpError::Io)?;
+
+        if is_upgrade {
+            if let Some(on_upgrade) = self.on_upgrade {
+                let owned_stream = stream.try_clone().map_err(HttpError::Io)?;
+                on_upgrade(owned_stream, &uri);
+            }
+            return Ok(false);
+        }
 
         Ok(keep_alive)
     }

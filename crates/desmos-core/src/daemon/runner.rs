@@ -96,16 +96,26 @@ pub fn run_daemon(config: Config) -> io::Result<()> {
                 mtu,
                 &state_fn,
             )?;
-            #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "freebsd")))]
+            #[cfg(target_os = "windows")]
+            super::client::run_client_windows(
+                client_cfg,
+                &ctx_ref.engine,
+                &ctx_ref.metrics,
+                mtu,
+                &state_fn,
+            )?;
+            #[cfg(not(any(
+                target_os = "linux",
+                target_os = "macos",
+                target_os = "freebsd",
+                target_os = "windows"
+            )))]
             {
                 let _ = (client_cfg, mtu, state_fn);
-                let poll_interval = Duration::from_millis(250);
-                loop {
-                    if signal::is_shutdown_requested() {
-                        break;
-                    }
-                    std::thread::sleep(poll_interval);
-                }
+                return Err(io::Error::new(
+                    io::ErrorKind::Unsupported,
+                    "no client runner for this platform",
+                ));
             }
         }
         crate::config::validate::Mode::Server => {

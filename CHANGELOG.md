@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- WebSocket frame loops for `/api/v1/ws/stats` (2 Hz stats snapshots) and `/api/v1/ws/logs` (live log entries). HTTP server `UpgradeHandler` callback detects 101 responses and switches to WebSocket frame I/O. Stats loop reads from `Broadcast<StatsSnapshot>`, logs loop reads from `Broadcast<Entry>`.
+- Windows encrypted client runner (`run_client_windows`) using Wintun TUN with poll-based loop.
+- Windows `GetAdaptersAddresses` interface discovery — replaces `NotImplemented` stub in `iface.rs`. Parses adapter linked list for name, MAC, IPv4/IPv6 addresses, oper status, and interface type flags.
+- Windows `IP_UNICAST_IF` per-interface socket binding via `setsockopt`. Interface index resolved through `ConvertInterfaceNameToLuidA` + `ConvertInterfaceLuidToIndex`.
+- Windows service daemon integration — `service_main.rs` sleep-loop stub replaced with `run_daemon(config)` call. SCM stop handler bridges to `desmos_rt::signal::request_shutdown()`.
 - macOS `IP_BOUND_IF` per-interface socket binding (`desmos-rt::bsd::bind_device`). `UdpSocket::bind_on_interface()` now works on macOS (via `setsockopt(IP_BOUND_IF, if_index)`) in addition to Linux (`SO_BINDTODEVICE`). Multi-NIC bonding with per-interface egress affinity now functional on macOS.
 - Server-mode UDP listener loop (`desmos-core::daemon::server_loop::run_server_linux`). Accepts Noise IK handshakes via `ClientRegistry::accept_client_msg1`, routes encrypted data packets to established sessions, rate-limits with `RateLimiter`. Runner dispatches Server mode to this loop.
 - All 7 CLI stub commands (`down`, `status`, `reload`, `config`, `bonding`, `logs`, `webui`) replaced with IPC client calls via Unix domain socket (`/var/run/desmos.sock`). New `desmos-cli::ipc_client` module. Commands return exit 1 with "daemon not running" when no daemon is active. `--json` flag outputs raw JSON response.

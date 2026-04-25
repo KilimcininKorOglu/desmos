@@ -18,3 +18,4 @@ pub mod embed;
 pub mod handlers;
 pub mod prometheus;
 pub mod routes;
+pub mod ws_loop;

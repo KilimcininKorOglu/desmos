@@ -56,6 +56,17 @@ impl UdpSocket {
         Ok(Self { inner: sock.into(), bound_device: Some(interface.to_string()) })
     }
 
+    #[cfg(target_os = "windows")]
+    pub fn bind_on_interface(interface: &str) -> io::Result<Self> {
+        use std::os::windows::io::AsRawSocket;
+        let addr: SocketAddr = "0.0.0.0:0".parse().expect("valid literal");
+        let sock = new_socket(addr)?;
+        let if_index = windows_interface_index(interface)?;
+        windows_bind_to_interface(sock.as_raw_socket(), if_index)?;
+        sock.bind(&addr.into())?;
+        Ok(Self { inner: sock.into(), bound_device: Some(interface.to_string()) })
+    }
+
     /// Local address the kernel assigned to this socket.
     pub fn local_addr(&self) -> io::Result<SocketAddr> {
         self.inner.local_addr()
@@ -173,6 +184,78 @@ fn disable_udp_connreset_raw(raw: std::os::windows::io::RawSocket) -> io::Result
             &mut bytes_returned,
             ptr::null_mut(),
             ptr::null_mut(),
+        )
+    };
+    if rc != 0 {
+        Err(io::Error::last_os_error())
+    } else {
+        Ok(())
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn windows_interface_index(name: &str) -> io::Result<u32> {
+    if name.is_empty() {
+        return Err(io::Error::new(io::ErrorKind::InvalidInput, "empty interface name"));
+    }
+
+    #[repr(C)]
+    struct NetLuid {
+        value: u64,
+    }
+
+    #[link(name = "iphlpapi")]
+    extern "system" {
+        fn ConvertInterfaceNameToLuidA(name: *const u8, luid: *mut NetLuid) -> u32;
+        fn ConvertInterfaceLuidToIndex(luid: *const NetLuid, index: *mut u32) -> u32;
+    }
+
+    let mut c_name = name.as_bytes().to_vec();
+    c_name.push(0);
+
+    let mut luid = NetLuid { value: 0 };
+    let rc = unsafe { ConvertInterfaceNameToLuidA(c_name.as_ptr(), &mut luid) };
+    if rc != 0 {
+        return Err(io::Error::new(
+            io::ErrorKind::NotFound,
+            format!("interface not found: {name}"),
+        ));
+    }
+
+    let mut index: u32 = 0;
+    let rc = unsafe { ConvertInterfaceLuidToIndex(&luid, &mut index) };
+    if rc != 0 {
+        return Err(io::Error::last_os_error());
+    }
+    Ok(index)
+}
+
+#[cfg(target_os = "windows")]
+fn windows_bind_to_interface(
+    raw: std::os::windows::io::RawSocket,
+    if_index: u32,
+) -> io::Result<()> {
+    use std::ffi::c_void;
+    use std::mem::size_of;
+    use std::ptr;
+
+    const SIO_SET_WFP_CONNECTION_REDIRECT_RECORDS: u32 = 0; // placeholder
+    const IP_UNICAST_IF: i32 = 31;
+    const IPPROTO_IP: i32 = 0;
+
+    #[link(name = "ws2_32")]
+    extern "system" {
+        fn setsockopt(s: usize, level: i32, optname: i32, optval: *const u8, optlen: i32) -> i32;
+    }
+
+    let idx_bytes = if_index.to_ne_bytes();
+    let rc = unsafe {
+        setsockopt(
+            raw as usize,
+            IPPROTO_IP,
+            IP_UNICAST_IF,
+            idx_bytes.as_ptr(),
+            idx_bytes.len() as i32,
         )
     };
     if rc != 0 {

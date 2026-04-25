@@ -123,10 +123,6 @@ impl NetworkInterface {
 // ---------------------------------------------------------------------------
 
 /// List every network interface on the host.
-///
-/// Returns `Ok(vec)` on Unix (Linux uses `/sys` + `getifaddrs`,
-/// non-Linux Unix uses `getifaddrs` only) and
-/// `Err(IfaceError::NotImplemented)` on Windows.
 pub fn list() -> Result<Vec<NetworkInterface>, IfaceError> {
     #[cfg(target_os = "linux")]
     {
@@ -136,10 +132,183 @@ pub fn list() -> Result<Vec<NetworkInterface>, IfaceError> {
     {
         other_unix_list()
     }
-    #[cfg(not(unix))]
+    #[cfg(target_os = "windows")]
     {
-        Err(IfaceError::NotImplemented("list() on non-Unix targets"))
+        windows_list()
     }
+    #[cfg(not(any(unix, target_os = "windows")))]
+    {
+        Err(IfaceError::NotImplemented("list() on this platform"))
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Windows: GetAdaptersAddresses
+// ---------------------------------------------------------------------------
+
+#[cfg(target_os = "windows")]
+fn windows_list() -> Result<Vec<NetworkInterface>, IfaceError> {
+    use std::mem;
+    use std::ptr;
+
+    const AF_UNSPEC: u32 = 0;
+    const GAA_FLAG_INCLUDE_PREFIX: u32 = 0x0010;
+    const ERROR_SUCCESS: u32 = 0;
+    const ERROR_BUFFER_OVERFLOW: u32 = 111;
+
+    #[repr(C)]
+    struct IpAdapterAddresses {
+        _alignment: u64,
+        next: *mut IpAdapterAddresses,
+        adapter_name: *mut u8,
+        first_unicast: *mut IpAdapterUnicastAddress,
+        _pad1: [*mut u8; 3],
+        dns_suffix: *mut u16,
+        description: *mut u16,
+        friendly_name: *mut u16,
+        physical_address: [u8; 8],
+        physical_address_length: u32,
+        flags: u32,
+        mtu: u32,
+        if_type: u32,
+        oper_status: u32,
+        // ... more fields we don't need
+    }
+
+    #[repr(C)]
+    struct IpAdapterUnicastAddress {
+        _alignment: u64,
+        next: *mut IpAdapterUnicastAddress,
+        address: SocketAddress,
+        // ... more fields
+    }
+
+    #[repr(C)]
+    struct SocketAddress {
+        sockaddr: *mut Sockaddr,
+        sockaddr_length: i32,
+    }
+
+    #[repr(C)]
+    struct Sockaddr {
+        sa_family: u16,
+        sa_data: [u8; 14],
+    }
+
+    #[link(name = "iphlpapi")]
+    extern "system" {
+        fn GetAdaptersAddresses(
+            family: u32,
+            flags: u32,
+            reserved: *mut u8,
+            adapter_addresses: *mut u8,
+            size_pointer: *mut u32,
+        ) -> u32;
+    }
+
+    let mut buf_size: u32 = 0;
+    let rc = unsafe {
+        GetAdaptersAddresses(
+            AF_UNSPEC,
+            GAA_FLAG_INCLUDE_PREFIX,
+            ptr::null_mut(),
+            ptr::null_mut(),
+            &mut buf_size,
+        )
+    };
+    if rc != ERROR_BUFFER_OVERFLOW && rc != ERROR_SUCCESS {
+        return Err(IfaceError::Io {
+            context: "GetAdaptersAddresses size query",
+            source: std::io::Error::from_raw_os_error(rc as i32),
+        });
+    }
+
+    let mut buf = vec![0u8; buf_size as usize];
+    let rc = unsafe {
+        GetAdaptersAddresses(
+            AF_UNSPEC,
+            GAA_FLAG_INCLUDE_PREFIX,
+            ptr::null_mut(),
+            buf.as_mut_ptr(),
+            &mut buf_size,
+        )
+    };
+    if rc != ERROR_SUCCESS {
+        return Err(IfaceError::Io {
+            context: "GetAdaptersAddresses",
+            source: std::io::Error::from_raw_os_error(rc as i32),
+        });
+    }
+
+    let mut result = Vec::new();
+    let mut adapter = buf.as_ptr() as *const IpAdapterAddresses;
+
+    while !adapter.is_null() {
+        let a = unsafe { &*adapter };
+
+        let name = unsafe {
+            if a.friendly_name.is_null() {
+                String::from("unknown")
+            } else {
+                let mut len = 0;
+                let mut p = a.friendly_name;
+                while *p != 0 {
+                    len += 1;
+                    p = p.add(1);
+                }
+                String::from_utf16_lossy(std::slice::from_raw_parts(a.friendly_name, len))
+            }
+        };
+
+        let mut mac = [0u8; 6];
+        let mac_len = (a.physical_address_length as usize).min(6);
+        mac[..mac_len].copy_from_slice(&a.physical_address[..mac_len]);
+
+        let oper = match a.oper_status {
+            1 => "up",
+            2 => "down",
+            3 => "testing",
+            _ => "unknown",
+        };
+
+        let flags = IfaceFlags {
+            up: a.oper_status == 1,
+            running: a.oper_status == 1,
+            loopback: a.if_type == 24,
+            point_to_point: a.if_type == 23,
+            broadcast: a.if_type == 6,
+            multicast: true,
+        };
+
+        let mut ipv4 = Vec::new();
+        let mut ipv6 = Vec::new();
+        let mut unicast = a.first_unicast;
+        while !unicast.is_null() {
+            let u = unsafe { &*unicast };
+            if !u.address.sockaddr.is_null() {
+                let sa = unsafe { &*u.address.sockaddr };
+                if sa.sa_family == 2 {
+                    let bytes: [u8; 4] =
+                        [sa.sa_data[2], sa.sa_data[3], sa.sa_data[4], sa.sa_data[5]];
+                    ipv4.push(Ipv4Addr::from(bytes));
+                } else if sa.sa_family == 23 {
+                    let sa6 = sa.sa_data.as_ptr() as *const u8;
+                    let mut addr_bytes = [0u8; 16];
+                    unsafe {
+                        std::ptr::copy_nonoverlapping(sa6.add(6), addr_bytes.as_mut_ptr(), 16);
+                    }
+                    ipv6.push(Ipv6Addr::from(addr_bytes));
+                }
+            }
+            unicast = u.next;
+        }
+
+        result.push(NetworkInterface { name, mac, ipv4, ipv6, flags, operstate: oper.to_string() });
+
+        adapter = a.next;
+    }
+
+    Ok(result)
 }
 
 // ---------------------------------------------------------------------------

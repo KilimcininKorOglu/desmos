@@ -180,11 +180,26 @@ pub mod imp {
         // Report RUNNING.
         report_status(SERVICE_RUNNING, 0, 0);
 
-        // Run the daemon. In a real integration this calls into
-        // desmos-core's daemon entry point. For now, poll the stop
-        // signal.
-        while !STOP_REQUESTED.load(Ordering::Acquire) {
-            std::thread::sleep(std::time::Duration::from_millis(500));
+        // Bridge the service stop signal to desmos-rt's shutdown system.
+        // The SCM handler sets STOP_REQUESTED; we wire it to
+        // desmos_rt::signal::request_shutdown so the daemon's reactor
+        // loop exits cleanly.
+        std::thread::spawn(|| {
+            while !STOP_REQUESTED.load(Ordering::Acquire) {
+                std::thread::sleep(std::time::Duration::from_millis(100));
+            }
+            desmos_rt::signal::request_shutdown();
+        });
+
+        // Load config and run the daemon.
+        let config_path = std::env::var("DESMOS_CONFIG")
+            .unwrap_or_else(|_| r"C:\ProgramData\Desmos\desmos.toml".to_string());
+        if let Ok(toml_str) = std::fs::read_to_string(&config_path) {
+            if let Ok(value) = desmos_core::config::parse(&toml_str) {
+                if let Ok(config) = desmos_core::config::validate::Config::from_value(&value) {
+                    let _ = desmos_core::daemon::runner::run_daemon(config);
+                }
+            }
         }
 
         // Report STOPPED.

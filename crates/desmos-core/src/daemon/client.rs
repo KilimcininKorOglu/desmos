@@ -161,6 +161,84 @@ pub fn run_client_kqueue(
     Ok(())
 }
 
+// ---- Windows entry point --------------------------------------------------
+
+#[cfg(target_os = "windows")]
+pub fn run_client_windows(
+    client_cfg: &ClientConfig,
+    engine: &Engine,
+    metrics: &Arc<PipelineMetrics>,
+    mtu: usize,
+    set_tunnel_state: &dyn Fn(crate::daemon::TunnelState),
+) -> std::io::Result<()> {
+    use desmos_rt::Tun;
+    use desmos_rt::WintunTun;
+    use std::io::ErrorKind;
+
+    let mut tun = WintunTun::create("wintun.dll", "Desmos", "Desmos", 0x20000)?;
+    crate::log!(Level::Info, "daemon", "tun created", iface = tun.name());
+
+    let (sockets, session) = setup_sockets_and_handshake(client_cfg, engine)?;
+    set_tunnel_state(crate::daemon::TunnelState::Up);
+
+    let mut scratch = vec![0u8; mtu + desmos_proto::PACKET_OVERHEAD];
+
+    crate::log!(Level::Info, "daemon", "reactor loop started", links = sockets.len());
+    let mut last_stats = Instant::now();
+
+    loop {
+        if signal::is_shutdown_requested() {
+            break;
+        }
+
+        match tun.recv(&mut scratch[desmos_proto::HEADER_LEN..]) {
+            Ok(n) if n > 0 => {
+                let _ = forward_tun_to_udp_bonded(
+                    &mut tun,
+                    engine,
+                    |link_id| sockets.iter().find(|e| e.link_id == link_id).map(|e| &e.sock),
+                    &session,
+                    &mut scratch,
+                    metrics,
+                );
+            }
+            _ => {}
+        }
+
+        for entry in &sockets {
+            match forward_udp_to_tun_encrypted(
+                &entry.sock,
+                &mut tun,
+                &session,
+                &mut scratch,
+                metrics,
+            ) {
+                Ok(_) => {}
+                Err(e) if e.kind() == ErrorKind::WouldBlock => {}
+                Err(e) if e.kind() == ErrorKind::InvalidData => {}
+                Err(_) => {}
+            }
+        }
+
+        if last_stats.elapsed() >= STATS_INTERVAL {
+            last_stats = Instant::now();
+            if let Some(ctx) = crate::daemon::try_context() {
+                let snap = crate::daemon::StatsSnapshot {
+                    metrics: metrics.snapshot(),
+                    interfaces: Vec::new(),
+                };
+                ctx.stats_bus.send(snap);
+            }
+        }
+
+        std::thread::sleep(std::time::Duration::from_millis(1));
+    }
+
+    set_tunnel_state(crate::daemon::TunnelState::Down);
+    crate::log!(Level::Info, "daemon", "reactor loop stopped");
+    Ok(())
+}
+
 // ---- Privilege drop -------------------------------------------------------
 
 #[cfg(unix)]
