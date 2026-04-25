@@ -37,12 +37,26 @@ const MAX_LIMIT: usize = 1000;
 /// GET /api/v1/logs
 pub fn list(req: &Request<'_>, _params: &Params) -> Response {
     let query = req.query().unwrap_or("");
-    let _limit = parse_limit(query);
-    let _level = parse_level(query);
+    let limit = parse_limit(query);
+    let level = parse_level(query);
 
-    // TODO: wire to real log ring buffer.
+    let all_entries = desmos_core::log::snapshot_ring();
+    let level_filter = level;
+    let entries: Vec<Value> = all_entries
+        .iter()
+        .filter(|e| e.level.as_str() >= level_filter)
+        .take(limit)
+        .map(|e| {
+            let mut m = BTreeMap::new();
+            m.insert("level".into(), Value::String(e.level.as_str().into()));
+            m.insert("target".into(), Value::String(e.target.into()));
+            m.insert("message".into(), Value::String(e.msg.into()));
+            Value::Object(m)
+        })
+        .collect();
+
     let mut data = BTreeMap::new();
-    data.insert("entries".into(), Value::Array(vec![]));
+    data.insert("entries".into(), Value::Array(entries));
 
     let json = success_envelope(Value::Object(data));
     let mut r = Response::ok();

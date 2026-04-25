@@ -31,11 +31,26 @@ const REDACTED: &str = "***";
 
 /// GET /api/v1/config
 pub fn get(_req: &Request<'_>, _params: &Params) -> Response {
-    // TODO: wire to real config; for now return a stub config shape.
-    let mut data = BTreeMap::new();
-    data.insert("mode".into(), Value::String("client".into()));
+    let data = match desmos_core::daemon::try_context() {
+        Some(ctx) => {
+            let cfg = ctx.config.read().unwrap();
+            let mut obj = BTreeMap::new();
+            obj.insert("mode".into(), Value::String(cfg.general.mode.as_str().into()));
+            obj.insert(
+                "log_level".into(),
+                Value::String(format!("{:?}", cfg.general.log_level).to_lowercase()),
+            );
+            obj.insert("tunnel_mtu".into(), Value::Number(cfg.general.tunnel_mtu as f64));
+            redact_secrets(&Value::Object(obj))
+        }
+        None => {
+            let mut obj = BTreeMap::new();
+            obj.insert("mode".into(), Value::String("client".into()));
+            Value::Object(obj)
+        }
+    };
 
-    let json = success_envelope(Value::Object(data));
+    let json = success_envelope(data);
     let mut r = Response::ok();
     r.body_json(&json);
     r
@@ -86,10 +101,11 @@ pub fn put(req: &Request<'_>, _params: &Params) -> Response {
         }
     };
 
-    // Step 3: Diff against current config.
-    // TODO: replace stub with real running config.
-    // For now, diff against the newly parsed config itself (no-op diff).
-    let diff = desmos_core::config::diff::diff(&new_config, &new_config);
+    let current = match desmos_core::daemon::try_context() {
+        Some(ctx) => ctx.config.read().unwrap().clone(),
+        None => new_config.clone(),
+    };
+    let diff = desmos_core::config::diff::diff(&current, &new_config);
 
     // Step 4: Check for unsafe changes.
     if !diff.is_safe() {
@@ -109,8 +125,9 @@ pub fn put(req: &Request<'_>, _params: &Params) -> Response {
         return r;
     }
 
-    // Step 5: Apply.
-    // TODO: wire to real config apply logic.
+    if let Some(ctx) = desmos_core::daemon::try_context() {
+        *ctx.config.write().unwrap() = new_config;
+    }
     let mut data = BTreeMap::new();
     data.insert("applied".into(), Value::Bool(true));
     if !diff.is_empty() {
