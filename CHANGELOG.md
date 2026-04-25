@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- macOS `IP_BOUND_IF` per-interface socket binding (`desmos-rt::bsd::bind_device`). `UdpSocket::bind_on_interface()` now works on macOS (via `setsockopt(IP_BOUND_IF, if_index)`) in addition to Linux (`SO_BINDTODEVICE`). Multi-NIC bonding with per-interface egress affinity now functional on macOS.
+- Server-mode UDP listener loop (`desmos-core::daemon::server_loop::run_server_linux`). Accepts Noise IK handshakes via `ClientRegistry::accept_client_msg1`, routes encrypted data packets to established sessions, rate-limits with `RateLimiter`. Runner dispatches Server mode to this loop.
 - All 7 CLI stub commands (`down`, `status`, `reload`, `config`, `bonding`, `logs`, `webui`) replaced with IPC client calls via Unix domain socket (`/var/run/desmos.sock`). New `desmos-cli::ipc_client` module. Commands return exit 1 with "daemon not running" when no daemon is active. `--json` flag outputs raw JSON response.
 - Unix domain socket IPC server (`desmos-core::daemon::ipc`). JSON-line protocol with inline string formatting (respects core → http DAG). Commands: status, down, reload, config, bonding, logs, interfaces. Non-blocking accept loop.
 - REST handler wiring: `health`, `status`, `interfaces`, `bonding`, `stats`, `config`, `logs` all read real data from `DaemonContext` via `try_context()`. `bonding.set_strategy` hot-swaps the Engine. `config.put` diffs against real running config. `stats.collect_stats` returns real `PipelineMetrics`. All fall back to stub data when daemon is not running (test mode).
