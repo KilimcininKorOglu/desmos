@@ -1,13 +1,8 @@
 //! `desmos clients` — list or kick connected clients (server mode).
 //!
-//! Ships the CLI surface + the text/JSON formatters that the
-//! daemon runner (still pending) will feed. While the daemon
-//! runner is absent, `run()` reports "daemon not reachable" so
-//! the command exits cleanly instead of hanging on a missing
-//! IPC socket. Every formatter is pure and exhaustively unit
-//! tested against synthetic `ClientRow` values, so the moment
-//! the runner lands the only wiring left is the socket read
-//! that fills the `Vec<ClientRow>`.
+//! Sends IPC commands (`clients_list`, `clients_kick`) to the
+//! running daemon. Pure text/JSON formatters are exhaustively
+//! unit tested against synthetic `ClientRow` values.
 //!
 //! # Subcommands
 //!
@@ -92,12 +87,21 @@ impl Command for ClientsCommand {
 }
 
 fn run_list(globals: &GlobalFlags, json_mode: bool) -> CliResult {
-    // Daemon runner / IPC socket not yet implemented — stub
-    // the data fetch with an explicit "not reachable" error so
-    // operators get a clean failure instead of a hang.
     let writer = Writer::from_globals(globals);
-    emit_error(&writer, json_mode, "desmos: daemon not reachable (server mode not running)");
-    Ok(1)
+    match crate::ipc_client::send_command("clients_list") {
+        Ok(response) => {
+            if json_mode {
+                let _ = writeln!(std::io::stdout(), "{response}");
+            } else {
+                writer.println(&response);
+            }
+            Ok(0)
+        }
+        Err(msg) => {
+            emit_error(&writer, json_mode, &msg);
+            Ok(1)
+        }
+    }
 }
 
 fn run_kick(rest: &[String], globals: &GlobalFlags, json_mode: bool) -> CliResult {
@@ -124,15 +128,21 @@ fn run_kick(rest: &[String], globals: &GlobalFlags, json_mode: bool) -> CliResul
         }
     };
 
-    // Daemon runner absent → treat as "cannot kick, daemon
-    // unreachable". When the runner lands, this branch becomes
-    // the IPC call.
-    emit_error(
-        &writer,
-        json_mode,
-        &format!("desmos clients kick {id}: daemon not reachable (server mode not running)"),
-    );
-    Ok(1)
+    let req = format!(r#"{{"command":"clients_kick","id":{id}}}"#);
+    match crate::ipc_client::send_command_with_json(&req) {
+        Ok(response) => {
+            if json_mode {
+                let _ = writeln!(std::io::stdout(), "{response}");
+            } else {
+                writer.println(&response);
+            }
+            Ok(0)
+        }
+        Err(msg) => {
+            emit_error(&writer, json_mode, &msg);
+            Ok(1)
+        }
+    }
 }
 
 fn is_json(subargs: &[String], globals: &GlobalFlags) -> bool {

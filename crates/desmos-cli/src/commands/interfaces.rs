@@ -33,8 +33,8 @@ impl Command for InterfacesCommand {
             if first != "list" && !first.starts_with("--") {
                 let w = Writer::from_globals(globals);
                 w.error(&format!(
-                    "desmos interfaces: subcommand `{first}` not implemented yet. \
-                     Only `list` is available in Phase 2."
+                    "desmos interfaces: subcommand `{first}` not recognized. \
+                     Only `list` is available."
                 ));
                 return Ok(64);
             }

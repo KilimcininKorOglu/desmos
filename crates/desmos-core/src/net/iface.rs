@@ -22,8 +22,8 @@
 //! 20. We return zeroed MAC on non-Linux Unix and document the
 //! shortfall until the cross-platform phase fills it in.
 //!
-//! On Windows `list()` returns [`IfaceError::NotImplemented`]; the
-//! eventual implementation will use `GetAdaptersAddresses` in Phase 6.
+//! On Windows `list()` calls `GetAdaptersAddresses` to enumerate
+//! adapters with name, MAC, IPv4/IPv6 addresses, and oper status.
 
 use std::ffi::CStr;
 use std::fmt;

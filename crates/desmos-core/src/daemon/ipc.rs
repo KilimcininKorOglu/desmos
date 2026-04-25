@@ -129,6 +129,8 @@ fn dispatch_command(line: &str) -> String {
         "bonding" => cmd_bonding(),
         "logs" => cmd_logs(),
         "interfaces" => cmd_interfaces(),
+        "clients_list" => cmd_clients_list(),
+        "clients_kick" => cmd_clients_kick(line),
         other => error_json(&format!("unknown command: {other}")),
     }
 }
@@ -224,6 +226,57 @@ fn cmd_interfaces() -> String {
         }
         None => error_json("daemon not running"),
     }
+}
+
+#[cfg(unix)]
+fn cmd_clients_list() -> String {
+    match super::try_context() {
+        Some(ctx) => match &ctx.registry {
+            Some(reg) => {
+                let ids = reg.table().ids();
+                let arr: Vec<String> = ids
+                    .iter()
+                    .map(|id| format!(r#"{{"id":{}}}"#, id.0))
+                    .collect();
+                ok_json(&format!(
+                    r#"{{"clients":[{}],"count":{}}}"#,
+                    arr.join(","),
+                    ids.len()
+                ))
+            }
+            None => ok_json(r#"{"clients":[],"count":0}"#),
+        },
+        None => error_json("daemon not running"),
+    }
+}
+
+#[cfg(unix)]
+fn cmd_clients_kick(line: &str) -> String {
+    let id = match extract_field_u16(line, "id") {
+        Some(v) => v,
+        None => return error_json("missing or invalid 'id' field"),
+    };
+    match super::try_context() {
+        Some(ctx) => match &ctx.registry {
+            Some(reg) => {
+                let removed = reg.remove_client(crate::session::SessionId(id)).is_some();
+                ok_json(&format!(r#"{{"id":{id},"kicked":{removed}}}"#))
+            }
+            None => error_json("daemon not in server mode"),
+        },
+        None => error_json("daemon not running"),
+    }
+}
+
+#[cfg(unix)]
+fn extract_field_u16(json_line: &str, field: &str) -> Option<u16> {
+    let needle = format!("\"{field}\"");
+    let idx = json_line.find(&needle)?;
+    let rest = &json_line[idx + needle.len()..];
+    let colon = rest.find(':')?;
+    let after_colon = rest[colon + 1..].trim_start();
+    let end = after_colon.find(|c: char| !c.is_ascii_digit())?;
+    after_colon[..end].parse().ok()
 }
 
 #[cfg(unix)]

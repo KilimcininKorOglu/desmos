@@ -4,11 +4,10 @@
 //! IPv4 / IPv6 addresses, and link flags. `watch()` (Linux-only for
 //! now) opens a netlink socket and emits events on link up / down.
 //!
-//! Linux-first: list() uses a hybrid of `/sys/class/net` (for names,
-//! MAC, operstate, flags — no FFI needed) and a hand-declared
-//! `getifaddrs` FFI for per-interface IP addresses. Non-Linux Unix
-//! platforms fall back to `getifaddrs`-only and skip MAC; Windows
-//! returns `NotImplemented` until the cross-platform phase (Task 41+).
+//! Linux uses a hybrid of `/sys/class/net` (for names, MAC, operstate,
+//! flags — no FFI needed) and a hand-declared `getifaddrs` FFI for
+//! per-interface IP addresses. Non-Linux Unix platforms fall back to
+//! `getifaddrs`-only and skip MAC. Windows uses `GetAdaptersAddresses`.
 
 pub mod dns;
 pub mod iface;

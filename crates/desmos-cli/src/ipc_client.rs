@@ -17,11 +17,21 @@ const DEFAULT_PATH: &str = "/var/run/desmos.sock";
 
 #[cfg(unix)]
 pub fn send_command(command: &str) -> Result<String, String> {
-    send_command_to(DEFAULT_PATH, command)
+    send_raw(DEFAULT_PATH, &format!(r#"{{"command":"{command}"}}"#))
+}
+
+#[cfg(unix)]
+pub fn send_command_with_json(json_line: &str) -> Result<String, String> {
+    send_raw(DEFAULT_PATH, json_line)
 }
 
 #[cfg(unix)]
 pub fn send_command_to(path: &str, command: &str) -> Result<String, String> {
+    send_raw(path, &format!(r#"{{"command":"{command}"}}"#))
+}
+
+#[cfg(unix)]
+fn send_raw(path: &str, json_line: &str) -> Result<String, String> {
     let stream = UnixStream::connect(path).map_err(|e| {
         if e.kind() == io::ErrorKind::NotFound || e.kind() == io::ErrorKind::ConnectionRefused {
             "daemon not running — start with `desmos up`".to_string()
@@ -37,8 +47,7 @@ pub fn send_command_to(path: &str, command: &str) -> Result<String, String> {
         .map_err(|e| format!("IPC timeout: {e}"))?;
 
     let mut writer = io::BufWriter::new(&stream);
-    let req = format!(r#"{{"command":"{command}"}}"#);
-    writeln!(writer, "{req}").map_err(|e| format!("IPC write: {e}"))?;
+    writeln!(writer, "{json_line}").map_err(|e| format!("IPC write: {e}"))?;
     writer.flush().map_err(|e| format!("IPC flush: {e}"))?;
 
     let reader = io::BufReader::new(&stream);
@@ -53,5 +62,10 @@ pub fn send_command_to(path: &str, command: &str) -> Result<String, String> {
 
 #[cfg(not(unix))]
 pub fn send_command(_command: &str) -> Result<String, String> {
+    Err("IPC not supported on this platform".to_string())
+}
+
+#[cfg(not(unix))]
+pub fn send_command_with_json(_json_line: &str) -> Result<String, String> {
     Err("IPC not supported on this platform".to_string())
 }

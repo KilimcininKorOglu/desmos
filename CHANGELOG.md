@@ -28,9 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `pipeline` module is now available on all platforms (removed `#[cfg(unix)]` gate from `lib.rs`). `PipelineMetrics` and `MetricsSnapshot` are pure data types with no platform-specific code; only `run_plaintext_linux` remains `#[cfg(target_os = "linux")]`-gated. Unblocks `DaemonContext` on Windows.
 
 ### Changed
-- `clients.list` handler reads active sessions from `DaemonContext.registry.table().ids()` instead of returning a static empty array. `clients.kick` handler calls `ClientRegistry::remove_client()` and returns 404 when session not found or daemon is not in server mode.
+- `desmos clients list` and `desmos clients kick <id>` now communicate with the running daemon via IPC (`clients_list` / `clients_kick` commands) instead of returning hardcoded "daemon not reachable". IPC server reads from `ClientRegistry::table().ids()` for listing and calls `ClientRegistry::remove_client()` for kicks.
+- `clients.list` REST handler reads active sessions from `DaemonContext.registry.table().ids()` instead of returning a static empty array. `clients.kick` REST handler calls `ClientRegistry::remove_client()` and returns 404 when session not found or daemon is not in server mode.
 - `SessionId` re-exported from `desmos_core::session` for downstream crate access.
-- Removed stale TODO comments from `interfaces.rs` (update handler), `clients.rs` (list/kick), and unused placeholder constant from `socket.rs` (Windows bind).
+- Updated stale module documentation in `iface.rs` and `net/mod.rs` to reflect Windows `GetAdaptersAddresses` implementation.
+- Removed stale TODO comments and placeholder constants from handler and socket modules.
 
 ### Fixed
 - Windows MSI `packaging/windows/wix/desmos.wxs` config file source path changed to `config\desmos.toml.example` (repo-root relative). Empirical finding: WiX v4 resolves `<File Source="…">` relative to `wix build`'s **current working directory**, not the `.wxs` file's own directory. The release workflow runs `wix build` from the repo root, so both this `Source=` and the `$(var.BinaryPath)` preprocessor substitution (`target\x86_64-pc-windows-msvc\release\desmos.exe`) must be expressed repo-root-relative with no `..` segments. Task 49 originally wrote four `..` (assuming .wxs-relative); the first actual `wix build` on v1.0.0's tag-triggered release workflow tripped `error WIX0103: Cannot find the File file` for this entry.
