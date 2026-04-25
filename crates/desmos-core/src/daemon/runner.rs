@@ -66,17 +66,26 @@ pub fn run_daemon(config: Config) -> io::Result<()> {
             let client_cfg = cfg.client.as_ref().ok_or_else(|| {
                 io::Error::new(io::ErrorKind::InvalidInput, "client mode requires [client] config")
             })?;
+            let state_fn = |s| ctx_ref.set_tunnel_state(s);
             #[cfg(target_os = "linux")]
             super::client::run_client_linux(
                 client_cfg,
                 &ctx_ref.engine,
                 &ctx_ref.metrics,
                 mtu,
-                &|s| ctx_ref.set_tunnel_state(s),
+                &state_fn,
             )?;
-            #[cfg(not(target_os = "linux"))]
+            #[cfg(any(target_os = "macos", target_os = "freebsd"))]
+            super::client::run_client_kqueue(
+                client_cfg,
+                &ctx_ref.engine,
+                &ctx_ref.metrics,
+                mtu,
+                &state_fn,
+            )?;
+            #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "freebsd")))]
             {
-                let _ = (client_cfg, mtu);
+                let _ = (client_cfg, mtu, state_fn);
                 let poll_interval = Duration::from_millis(250);
                 loop {
                     if signal::is_shutdown_requested() {
