@@ -21,7 +21,7 @@ PKG_NAME:=desmos
 PKG_VERSION:=1.0.0
 PKG_RELEASE:=1
 
-PKG_MAINTAINER:=KilimcininKorOglu <KilimcininKorOglu>
+PKG_MAINTAINER:=KilimcininKorOglu
 PKG_LICENSE:=MIT
 
 include $(INCLUDE_DIR)/package.mk

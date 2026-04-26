@@ -43,5 +43,5 @@ install -dm700 %{buildroot}%{_sysconfdir}/desmos
 %dir %attr(0700,root,root) %{_sysconfdir}/desmos
 
 %changelog
-* Tue Apr 15 2026 KilimcininKorOglu <KilimcininKorOglu> - 1.0.0-1
+* Tue Apr 15 2026 KilimcininKorOglu - 1.0.0-1
 - Initial package

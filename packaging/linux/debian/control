@@ -1,7 +1,7 @@
 Source: desmos
 Section: net
 Priority: optional
-Maintainer: KilimcininKorOglu <KilimcininKorOglu>
+Maintainer: KilimcininKorOglu
 Build-Depends: debhelper-compat (= 13), cargo, rustc (>= 1.75)
 Standards-Version: 4.6.2
 Homepage: https://github.com/KilimcininKorOglu/desmos
