@@ -2,97 +2,124 @@
 
 **Bond every link.**
 
-Desmos is an open-source connection bonding VPN written in Rust. It combines
-Wi-Fi, Ethernet, LTE, and any other network interface into a single encrypted
-tunnel that is both faster and more reliable than any link alone. A single
-static binary ships on six platforms with only five external dependencies.
+Desmos is an open-source connection bonding VPN. It aggregates multiple network
+interfaces (Wi-Fi + Ethernet + LTE + Starlink, etc.) into a single encrypted
+tunnel that is both faster and more reliable than any link alone.
+
+Written in Rust with a hand-rolled async runtime, Noise IK handshake,
+ChaCha20-Poly1305 AEAD, and an embedded React admin UI. Ships as a single
+static binary under 700 KB on six platforms with exactly five external runtime
+dependencies.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/KilimcininKorOglu/desmos/ci.yml?branch=main)](https://github.com/KilimcininKorOglu/desmos/actions)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Release](https://img.shields.io/github/v/release/KilimcininKorOglu/desmos)](https://github.com/KilimcininKorOglu/desmos/releases)
+
+## How It Works
+
+```
+          +---------+    TUN     +---------+    UDP/encrypted    +---------+
+  apps -> | desmos  | --------> | bonding | ------------------> | desmos  | -> apps
+          | client  |           | engine  |    per-interface     | server  |
+          +---------+           +---------+    sockets           +---------+
+                                  |  |  |
+                              eth0 wlan0 lte0
+```
+
+Desmos opens a TUN device, intercepts all traffic, encrypts it with
+ChaCha20-Poly1305, and distributes packets across multiple physical interfaces
+using one of four bonding strategies. The server reassembles and decrypts.
 
 ## Features
 
-- Bond 2-8 network interfaces into a single encrypted tunnel
-- Four bonding strategies: Round-Robin, Weighted, Latency-Adaptive, Redundant
-- Sub-second failover on interface loss with 10-second probation recovery
-- Noise IK handshake (X25519 + ChaCha20-Poly1305 + BLAKE3), 1-RTT key exchange
-- Client-server and peer-to-peer modes with STUN hole-punching and relay fallback
-- Runs on Linux, macOS, Windows, FreeBSD, OpenWrt, and pfSense
-- Single static binary, five external runtime dependencies
-- Embedded Web UI with live throughput charts and WebSocket streaming
-- DNS leak protection with automatic system resolver override
-- Hand-rolled HTTP server, JSON codec, WebSocket, CLI parser, and TOML parser
+- Bond 2-8 network interfaces into one encrypted tunnel
+- Four bonding strategies, hot-swappable at runtime:
+  - **Round-Robin** -- equal distribution across links
+  - **Weighted** -- proportional distribution by configured weight
+  - **Latency-Adaptive** -- favors lowest-RTT link (default)
+  - **Redundant** -- sends every packet on all links for maximum reliability
+- Sub-second failover with 10-second probation recovery
+- Noise IK handshake: X25519 + ChaCha20-Poly1305 + BLAKE3, 1-RTT
+- Client-server and P2P modes (STUN hole-punching + relay fallback)
+- Six platforms: Linux, macOS, Windows, FreeBSD, OpenWrt, pfSense
+- Single static binary, 650 KB (Linux x86_64 musl, stripped)
+- Embedded Web UI: live throughput charts, WebSocket log streaming, strategy switching
+- 17-route REST API with Prometheus metrics endpoint
+- DNS leak protection with automatic resolver override
+- PSK, public-key, TOTP, and mTLS authentication
+- Hand-rolled: HTTP server, JSON codec, WebSocket, CLI parser, TOML parser, async runtime
 
 ## Performance
 
-| Metric                         | Target                      |
-|--------------------------------|-----------------------------|
-| Single-core throughput         | >= 2 Gbps                   |
-| Bonding overhead               | < 3%                        |
-| Handshake latency              | < 5 ms                      |
-| Failover time                  | < 1 second                  |
-| Client memory (3 interfaces)   | < 20 MB                     |
-| Binary size (Linux x86_64)     | < 5 MB                      |
+Measured on a single core, 1400-byte MTU:
+
+| Metric                       | Measured         | Target     |
+|------------------------------|------------------|------------|
+| AEAD throughput              | 9.5 Gbps         | >= 2 Gbps  |
+| Scheduler dispatch (RR)      | 67 ns/packet     | < 200 ns   |
+| Reorder buffer (in-order)    | 73 ns/packet     | < 1 ms p99 |
+| Handshake latency            | < 5 ms           | < 5 ms     |
+| Failover time                | < 1 s            | < 1 s      |
+| Binary size (musl, stripped) | 650 KB            | < 5 MB     |
 
 ## Install
 
+### From release
+
+Download the latest binary from
+[Releases](https://github.com/KilimcininKorOglu/desmos/releases):
+
+```bash
+# Linux x86_64
+curl -LO https://github.com/KilimcininKorOglu/desmos/releases/latest/download/desmos-x86_64-unknown-linux-musl.tar.gz
+tar xzf desmos-x86_64-unknown-linux-musl.tar.gz
+sudo mv desmos /usr/local/bin/
+```
+
 ### From source
+
+Requires Rust 1.75+ (pinned via `rust-toolchain.toml`):
 
 ```bash
 git clone https://github.com/KilimcininKorOglu/desmos.git
 cd desmos
 cargo build --release
+# Binary: target/release/desmos
 ```
 
-The binary is at `target/release/desmos`.
+### Platform-specific
 
-### Linux (musl static)
-
-```bash
-rustup target add x86_64-unknown-linux-musl
-cargo build --release --target x86_64-unknown-linux-musl
-```
-
-### OpenWrt (IPK)
-
-```bash
-# Cross-compile for the target architecture (see docs for toolchain setup)
-cargo build --release --target <openwrt-target>
-# Package with the included IPK builder
-./packaging/openwrt/build-ipk.sh
-```
-
-### Windows
-
-```bash
-cargo build --release
-# Requires wintun.dll in the same directory as the binary
-```
-
-### macOS / FreeBSD
-
-```bash
-cargo build --release
-```
+| Platform          | Notes                                                              |
+|-------------------|--------------------------------------------------------------------|
+| Linux (musl)      | `cargo build --release --target x86_64-unknown-linux-musl`         |
+| macOS             | `cargo build --release` (requires utun, run with `sudo`)           |
+| Windows           | `cargo build --release` (requires `wintun.dll` next to binary)     |
+| FreeBSD           | `cargo build --release`                                            |
+| OpenWrt           | `./scripts/build-openwrt.sh` or cross-compile with `--no-default-features` |
+| Homebrew (macOS)  | `brew install --build-from-source desmos` (from tap)               |
 
 ## Quick Start
 
-### Client
+### 1. Generate a config
 
-Create `/etc/desmos/config.toml`:
+```bash
+desmos config generate > /etc/desmos/config.toml
+```
+
+### 2. Edit the config
+
+**Client** (`/etc/desmos/config.toml`):
 
 ```toml
 [general]
 mode = "client"
-log_level = "info"
 tunnel_mtu = 1400
 
 [client]
-server = "vpn.example.com:4789"
-server_public_key = "<server-public-key>"
+server = "vpn.example.com:4900"
+server_public_key = "<hex-encoded-server-pubkey>"
 private_key_file = "/etc/desmos/client.key"
 bonding_strategy = "latency-adaptive"
-reorder_window_ms = 50
 dns_leak_protection = true
 dns_servers = ["1.1.1.1", "8.8.8.8"]
 
@@ -107,92 +134,147 @@ weight = 80
 enabled = true
 ```
 
-Start the tunnel:
-
-```bash
-sudo desmos up
-```
-
-Check status:
-
-```bash
-desmos status
-```
-
-### Server
+**Server** (`/etc/desmos/server.toml`):
 
 ```toml
 [general]
 mode = "server"
-log_level = "info"
 tunnel_mtu = 1400
 
 [server]
-listen = "0.0.0.0:4789"
-public_key = "<server-public-key>"
+listen = "0.0.0.0:4900"
+public_key = "<hex-encoded-server-pubkey>"
 private_key_file = "/etc/desmos/server.key"
 max_clients = 100
 
-[auth]
+[server.auth]
 method = "psk"
-psk = "<pre-shared-key>"
+psk = "<shared-secret>"
 
 [webui]
 enabled = true
 listen = "127.0.0.1:8080"
 username = "admin"
-password_hash = "<pbkdf2-hash>"
+password_hash = "<pbkdf2-phc-string>"
 ```
+
+### 3. Validate
 
 ```bash
-sudo desmos up --config /etc/desmos/server.toml
+desmos config validate --config /etc/desmos/config.toml
 ```
 
-## Workspace
+### 4. Start
+
+```bash
+sudo desmos up --config /etc/desmos/config.toml
+```
+
+### 5. Monitor
+
+```bash
+desmos status          # Tunnel state, uptime, strategy, link count
+desmos interfaces      # All host network interfaces
+desmos stats           # Aggregate counters
+desmos bonding         # Current strategy and link health
+desmos clients         # Connected sessions (server mode)
+desmos logs            # Recent log entries
+```
+
+Open `http://127.0.0.1:8080` for the Web UI dashboard.
+
+## CLI Reference
 
 ```
-desmos-proto    Wire protocol, crypto primitives, handshake (I/O-free)
-desmos-rt       Hand-rolled async runtime: reactor, TUN, sockets, timers
-desmos-core     Domain logic: bonding, sessions, config, auth, server
-desmos-http     HTTP/1.1 server, WebSocket, JSON codec, Basic Auth
-desmos-webui    REST API handlers, embedded React SPA
-desmos-cli      CLI parser, subcommand dispatcher
-desmos          Binary entry point
+desmos up           Start the tunnel (requires root/admin)
+desmos down         Tear down the tunnel
+desmos status       Show tunnel and link status
+desmos reload       Hot-reload configuration
+desmos config       Generate, validate, or show configuration
+desmos bonding      Show or switch bonding strategy
+desmos interfaces   List host network interfaces
+desmos clients      List or kick connected clients (server mode)
+desmos stats        Print aggregate server statistics
+desmos logs         Tail recent log entries
+desmos webui        Manage the embedded Web UI
+desmos version      Print version and exit
 ```
+
+All commands accept `--json` for machine-readable output. See
+[docs/cli.md](docs/cli.md) for the full reference.
+
+## Architecture
+
+Seven-crate workspace with a strict dependency DAG (no cycles):
+
+```
+desmos-proto  ->  desmos-rt  ->  desmos-core  ->  desmos-http  -+
+                                                                +->  desmos (bin)
+                                    desmos-webui  --------------+
+                                    desmos-cli   ---------------+
+```
+
+| Crate          | Responsibility                                              |
+|----------------|-------------------------------------------------------------|
+| `desmos-proto` | Wire types, Noise IK, AEAD, BLAKE3. No I/O.                |
+| `desmos-rt`    | Reactors (epoll/kqueue/IOCP), TUN, sockets, timers.        |
+| `desmos-core`  | Bonding engine, sessions, config, auth, server, P2P.       |
+| `desmos-http`  | HTTP/1.1 server, WebSocket, JSON codec, Basic Auth.        |
+| `desmos-webui` | REST API (17 routes), WebSocket streams, embedded React SPA.|
+| `desmos-cli`   | Argument parser, 12 subcommands, IPC client.               |
+| `desmos`       | Binary entry point.                                        |
+
+Only five external runtime crates are allowed (`deny.toml` enforced):
+
+| Crate      | Purpose                                |
+|------------|----------------------------------------|
+| `ring`     | AEAD, X25519, PBKDF2                   |
+| `blake3`   | Transcript hash, KDF                   |
+| `socket2`  | Socket primitives                      |
+| `wintun`   | Windows TUN driver (Windows only)      |
+
+Everything else (HTTP, JSON, TOML, CLI, async runtime, logging) is hand-rolled.
 
 ## Documentation
 
-| Document                                          | Description                  |
-|---------------------------------------------------|------------------------------|
-| [Architecture](docs/architecture.md)              | Workspace DAG, platform model|
-| [Protocol](docs/protocol.md)                      | DWP wire format              |
-| [CLI Reference](docs/cli.md)                      | All 12 subcommands           |
-| [Web UI Reference](docs/webui.md)                 | Pages, API, WebSocket        |
-| [ADR 0001](docs/adr/0001-workspace-layout.md)     | Workspace layout             |
-| [ADR 0002](docs/adr/0002-hand-rolled-runtime.md)  | Hand-rolled runtime          |
-| [ADR 0003](docs/adr/0003-5-crate-budget.md)       | Five-crate budget            |
-| [ADR 0004](docs/adr/0004-typestate-for-sessions.md)| Typestate sessions          |
+| Document                                           | Description                   |
+|----------------------------------------------------|-------------------------------|
+| [Architecture](docs/architecture.md)               | Workspace DAG, platform model |
+| [Protocol](docs/protocol.md)                       | DWP wire format, Noise IK     |
+| [CLI Reference](docs/cli.md)                       | All 12 subcommands            |
+| [Web UI Reference](docs/webui.md)                  | Pages, REST API, WebSocket    |
+| [ADR 0001](docs/adr/0001-workspace-layout.md)      | Workspace layout rationale    |
+| [ADR 0002](docs/adr/0002-hand-rolled-runtime.md)   | Why no tokio                  |
+| [ADR 0003](docs/adr/0003-5-crate-budget.md)        | Five-crate dependency budget  |
+| [ADR 0004](docs/adr/0004-typestate-for-sessions.md) | Typestate session pattern    |
 
 ## Authentication
 
-| Method     | Use case                                          |
-|------------|---------------------------------------------------|
-| PSK        | Simple shared secret for small deployments        |
-| Public Key | Ed25519 key pair, no shared secret needed         |
-| TOTP       | RFC 6238 time-based one-time password             |
-| mTLS       | Certificate-based, for enterprise environments    |
+| Method     | Mechanism                                          |
+|------------|----------------------------------------------------|
+| PSK        | Shared secret mixed into Noise IK handshake        |
+| Public Key | X25519 key pairs, authorized_keys file             |
+| TOTP       | RFC 6238, +/-1 period window, replay protection    |
+| mTLS       | X.509 certificate chain verification via `ring`    |
 
-The Web UI uses HTTP Basic Auth with PBKDF2-HMAC-SHA256.
+Web UI uses HTTP Basic Auth with PBKDF2-HMAC-SHA256.
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Run `cargo fmt && cargo clippy -D warnings && cargo test --workspace`
-4. Submit a pull request
+```bash
+# Development cycle
+cargo fmt --all
+cargo clippy --workspace --all-targets -- -D warnings
+cargo test --workspace
+cargo deny check bans licenses sources
 
-All code must pass `cargo deny check bans licenses sources` before merge.
+# Frontend (optional, inside crates/desmos-webui/web/)
+npm ci && npm run build
+npm run typecheck && npm run lint
+```
+
+All code must pass the quality gate above before merge. MSRV is 1.75.0 (pinned).
 
 ## License
 
-Desmos is released under the MIT License. See [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
