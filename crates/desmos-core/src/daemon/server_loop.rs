@@ -124,7 +124,7 @@ pub fn run_server_linux(
             } else if ev.token == TUN_TOKEN {
                 loop {
                     let n = match tun.recv(&mut scratch[HEADER_LEN..]) {
-                        Ok(n) if n == 0 => break,
+                        Ok(0) => break,
                         Ok(n) => n,
                         Err(e) if e.kind() == ErrorKind::WouldBlock => break,
                         Err(_) => break,
@@ -154,6 +154,7 @@ pub fn run_server_linux(
 }
 
 #[cfg(target_os = "linux")]
+#[allow(clippy::too_many_arguments)]
 fn handle_incoming<T: Tun>(
     udp: &UdpSocket,
     tun: &mut T,
