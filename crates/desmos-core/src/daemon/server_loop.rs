@@ -221,7 +221,7 @@ fn handle_incoming<T: Tun>(
             if let crate::session::AnySession::Established(ref session) = *guard {
                 let payload = &data[HEADER_LEN..];
                 let mut ct = payload.to_vec();
-                match session.decrypt_data(header.sequence, &mut ct) {
+                match session.decrypt_data(header.sequence.0 as u64, &mut ct) {
                     Ok(plaintext) => {
                         let _ = tun.send(&plaintext);
                     }
