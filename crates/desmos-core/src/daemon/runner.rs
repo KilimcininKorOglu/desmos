@@ -62,6 +62,7 @@ pub fn run_daemon(config: Config) -> io::Result<()> {
         tunnel_state: AtomicU8::new(TunnelState::Down as u8),
         started_at: Instant::now(),
         sockets: RwLock::new(HashMap::new()),
+        link_scores: RwLock::new(HashMap::new()),
         registry,
     });
 

@@ -6,7 +6,6 @@
 //!   "data": {
 //!     "entries": [
 //!       {
-//!         "timestamp_us": 1744291200000000,
 //!         "level": "info",
 //!         "target": "desmos_core::session",
 //!         "message": "session established with peer"

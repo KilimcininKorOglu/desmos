@@ -68,20 +68,24 @@ fn collect_stats() -> Vec<InterfaceStats> {
         Some(ctx) => {
             let snap = ctx.metrics.snapshot();
             let links = ctx.engine.links_snapshot();
+            let scores = ctx.link_scores.read().unwrap();
             links
                 .all()
                 .iter()
-                .map(|link| InterfaceStats {
-                    name: link.name.clone(),
-                    tx_bytes: snap.bytes_sent,
-                    rx_bytes: snap.bytes_received,
-                    tx_packets: snap.packets_sent,
-                    rx_packets: snap.packets_received,
-                    rtt_us: 0,
-                    loss_pct: 0.0,
-                    jitter_us: 0,
-                    decrypt_errors: snap.decrypt_failures,
-                    replay_drops: snap.replay_drops,
+                .map(|link| {
+                    let score = scores.get(&link.id).copied().unwrap_or_default();
+                    InterfaceStats {
+                        name: link.name.clone(),
+                        tx_bytes: snap.bytes_sent,
+                        rx_bytes: snap.bytes_received,
+                        tx_packets: snap.packets_sent,
+                        rx_packets: snap.packets_received,
+                        rtt_us: score.rtt_us as u64,
+                        loss_pct: score.loss_rate as f64,
+                        jitter_us: score.jitter_us as u64,
+                        decrypt_errors: snap.decrypt_failures,
+                        replay_drops: snap.replay_drops,
+                    }
                 })
                 .collect()
         }

@@ -25,6 +25,6 @@ Installers:
   - Architecture: x64
     InstallerType: msi
     InstallerUrl: https://github.com/KilimcininKorOglu/desmos/releases/download/v1.0.0/desmos-1.0.0-x64.msi
-    InstallerSha256: PLACEHOLDER
+    InstallerSha256: cdd7225dbceddcd658172d04b69c6621a77edc4bc1662e13c6235d29e3f16111
 ManifestType: singleton
 ManifestVersion: 1.4.0

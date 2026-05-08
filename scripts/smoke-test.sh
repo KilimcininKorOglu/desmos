@@ -56,10 +56,10 @@ if "$BINARY" config generate > "$TMPDIR/config.toml" 2>/dev/null; then
     if [ -s "$TMPDIR/config.toml" ]; then
         pass "config generate produced output"
     else
-        echo "SKIP: config generate produced empty output (stub)"
+        fail "config generate produced empty output"
     fi
 else
-    echo "SKIP: config generate not implemented yet"
+    fail "config generate failed"
 fi
 
 # 4. Config validate.
@@ -67,7 +67,7 @@ if [ -s "$TMPDIR/config.toml" ]; then
     if "$BINARY" config validate --config "$TMPDIR/config.toml" 2>/dev/null; then
         pass "config validate accepted generated config"
     else
-        echo "SKIP: config validate not implemented yet"
+        fail "config validate rejected generated config"
     fi
 fi
 

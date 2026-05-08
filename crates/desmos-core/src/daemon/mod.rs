@@ -25,6 +25,7 @@ use std::time::Instant;
 
 use crate::bonding::Engine;
 use crate::bonding::LinkId;
+use crate::bonding::LinkScore;
 use crate::broadcast::Broadcast;
 use crate::config::validate::Config;
 use crate::log::Entry;
@@ -87,6 +88,7 @@ pub struct DaemonContext {
     pub tunnel_state: AtomicU8,
     pub started_at: Instant,
     pub sockets: RwLock<HashMap<LinkId, UdpSocket>>,
+    pub link_scores: RwLock<HashMap<LinkId, LinkScore>>,
     pub registry: Option<ClientRegistry>,
 }
 
@@ -188,6 +190,7 @@ mod tests {
             tunnel_state: AtomicU8::new(TunnelState::Down as u8),
             started_at: Instant::now(),
             sockets: RwLock::new(HashMap::new()),
+            link_scores: RwLock::new(HashMap::new()),
             registry: None,
         };
         assert_eq!(ctx.tunnel_state(), TunnelState::Down);

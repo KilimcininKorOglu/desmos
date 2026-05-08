@@ -37,6 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `desmos stats` wired to IPC (`stats` command). Returns uptime, client count, bytes in/out, and bonding strategy from `DaemonContext`. Previously returned a hardcoded "daemon not reachable" stub.
 - Updated stale module documentation in `iface.rs` and `net/mod.rs` to reflect Windows `GetAdaptersAddresses` implementation.
 - Removed stale TODO comments and placeholder constants from handler and socket modules.
+- `stats` handler reads per-link RTT, loss, and jitter from `DaemonContext.link_scores` instead of hardcoded zeros. `DaemonContext` gains `link_scores: RwLock<HashMap<LinkId, LinkScore>>` for probe data.
+- `status` handler reads link health state (`active`/`dead`) from `link.healthy` instead of hardcoded `"active"`. Removed hardcoded `session_id` field.
+- `bonding` handler computes `dead_links` from actual link health count instead of hardcoded zero.
+- `logs` handler docstring corrected to match actual response format (no `timestamp_us` field).
+- Homebrew formula SHA256 and winget installer SHA256 replaced with real release hashes.
+- `package.json` and `package-lock.json` version bumped from `0.1.0` to `1.0.0`.
+- `release.yml` example version updated to `1.0.0`.
+- `smoke-test.sh` stale "not implemented yet" skip messages replaced with proper fail assertions.
 
 ### Fixed
 - Windows MSI `packaging/windows/wix/desmos.wxs` config file source path changed to `config\desmos.toml.example` (repo-root relative). Empirical finding: WiX v4 resolves `<File Source="…">` relative to `wix build`'s **current working directory**, not the `.wxs` file's own directory. The release workflow runs `wix build` from the repo root, so both this `Source=` and the `$(var.BinaryPath)` preprocessor substitution (`target\x86_64-pc-windows-msvc\release\desmos.exe`) must be expressed repo-root-relative with no `..` segments. Task 49 originally wrote four `..` (assuming .wxs-relative); the first actual `wix build` on v1.0.0's tag-triggered release workflow tripped `error WIX0103: Cannot find the File file` for this entry.

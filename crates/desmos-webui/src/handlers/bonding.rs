@@ -29,10 +29,12 @@ pub fn get(_req: &Request<'_>, _params: &Params) -> Response {
                 Value::String(ctx.engine.current_strategy_name().into()),
             );
             let links = ctx.engine.links_snapshot();
+            let healthy = links.healthy().len() as f64;
             let total = links.len() as f64;
-            data.insert("active_links".into(), Value::Number(total));
+            let dead = total - healthy;
+            data.insert("active_links".into(), Value::Number(healthy));
             data.insert("degraded_links".into(), Value::Number(0.0));
-            data.insert("dead_links".into(), Value::Number(0.0));
+            data.insert("dead_links".into(), Value::Number(dead));
         }
         None => {
             data.insert("strategy".into(), Value::String("round-robin".into()));
