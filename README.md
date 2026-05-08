@@ -237,16 +237,17 @@ Everything else (HTTP, JSON, TOML, CLI, async runtime, logging) is hand-rolled.
 
 ## Documentation
 
-| Document                                           | Description                   |
-|----------------------------------------------------|-------------------------------|
-| [Architecture](docs/architecture.md)               | Workspace DAG, platform model |
-| [Protocol](docs/protocol.md)                       | DWP wire format, Noise IK     |
-| [CLI Reference](docs/cli.md)                       | All 12 subcommands            |
-| [Web UI Reference](docs/webui.md)                  | Pages, REST API, WebSocket    |
-| [ADR 0001](docs/adr/0001-workspace-layout.md)      | Workspace layout rationale    |
-| [ADR 0002](docs/adr/0002-hand-rolled-runtime.md)   | Why no tokio                  |
-| [ADR 0003](docs/adr/0003-5-crate-budget.md)        | Five-crate dependency budget  |
-| [ADR 0004](docs/adr/0004-typestate-for-sessions.md) | Typestate session pattern    |
+| Document                                           | Description                        |
+|----------------------------------------------------|------------------------------------|
+| [Getting Started](docs/getting-started.md)         | Install, configure, run, verify    |
+| [Architecture](docs/architecture.md)               | Workspace DAG, platform model      |
+| [Protocol](docs/protocol.md)                       | DWP wire format, Noise IK          |
+| [CLI Reference](docs/cli.md)                       | All 12 subcommands                 |
+| [Web UI Reference](docs/webui.md)                  | Pages, REST API, WebSocket         |
+| [ADR 0001](docs/adr/0001-workspace-layout.md)      | Workspace layout rationale         |
+| [ADR 0002](docs/adr/0002-hand-rolled-runtime.md)   | Why no tokio                       |
+| [ADR 0003](docs/adr/0003-5-crate-budget.md)        | Five-crate dependency budget       |
+| [ADR 0004](docs/adr/0004-typestate-for-sessions.md) | Typestate session pattern         |
 
 ## Authentication
 
