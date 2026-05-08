@@ -1,4 +1,4 @@
-//! BLAKE3 hasher wrapper. Used by the Noise transcript hash (Task 16)
+//! BLAKE3 hasher wrapper. Used by the Noise transcript hash
 //! and by the log redactor to fingerprint secrets without echoing them.
 
 pub const HASH_LEN: usize = 32;

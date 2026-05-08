@@ -1,6 +1,6 @@
 //! RFC 5280 §5.1 Certificate Revocation List (CRL) parser.
 //!
-//! Consumed by the Task 34 [`super::mtls::MtlsAuthenticator`] to
+//! Consumed by the [`super::mtls::MtlsAuthenticator`] to
 //! reject revoked client certificates. Builds on the same
 //! [`super::asn1::DerReader`] and time / algorithm helpers as
 //! [`super::x509`].

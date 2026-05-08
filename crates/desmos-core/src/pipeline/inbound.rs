@@ -2,8 +2,8 @@
 //! header, and deliver the IP payload to the TUN.
 //!
 //! Two variants:
-//! - `forward_udp_to_tun` is the plaintext path from Phase 1.
-//! - `forward_udp_to_tun_encrypted` is the Phase 2 path that checks
+//! - `forward_udp_to_tun` is the plaintext debugging path.
+//! - `forward_udp_to_tun_encrypted` is the production path that checks
 //!   anti-replay, decrypts the AEAD payload via the matching
 //!   `Session<Established>`, and bumps the right counter on any drop.
 

@@ -11,7 +11,7 @@
 //! After message 2 both sides `Split()` the chaining key into two transport
 //! keys: the initiator-to-responder key and the responder-to-initiator key.
 //! Those are what `Session<Established>` uses to seal and open data-plane
-//! packets in Task 17.
+//! packets.
 //!
 //! The hash function is SHA-256, not BLAKE3, because a standard Noise variant
 //! needs MixHash and HKDF to share a hash family and our `hkdf` module is

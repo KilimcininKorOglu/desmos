@@ -1,7 +1,7 @@
 //! Per-source IP token-bucket rate limiter.
 //!
-//! Task 35 ships this as the first gate of the Phase 4 server
-//! handshake accept path. Every inbound msg1 runs through
+//! First gate of the server handshake accept path. Every inbound
+//! msg1 runs through
 //! [`RateLimiter::try_admit`] *before* any crypto work happens —
 //! that way a UDP flood from one source cannot burn CPU on
 //! Noise IK key decryption, and cannot get past the
@@ -47,7 +47,7 @@ struct Bucket {
 
 /// Token-bucket rate limiter keyed by [`IpAddr`].
 ///
-/// All operations are guarded by a single [`Mutex`] — Phase 4's
+/// All operations are guarded by a single [`Mutex`] — the
 /// accept path is single-threaded per listener, so contention
 /// is expected to be near-zero. If profiling shows the mutex
 /// is a bottleneck in a future multi-listener world, shard by

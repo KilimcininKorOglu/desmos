@@ -131,7 +131,7 @@ pub fn run_server_linux(
                     };
                     let _ = n;
                     // TUN egress routing (client lookup by inner IP) is
-                    // deferred to Task 19 — requires inner-IP → session map.
+                    // not yet implemented — requires inner-IP → session map.
                 }
             }
         }

@@ -94,7 +94,7 @@ impl HttpServer {
     ///
     /// This method blocks indefinitely. It processes one connection
     /// at a time in the current thread. For concurrent handling,
-    /// wrap in a thread pool or integrate with the reactor (Task 51+).
+    /// wrap in a thread pool or integrate with the reactor.
     pub fn run(&self) -> io::Result<()> {
         eprintln!("[http] listening on {}", self.listener.local_addr()?);
 

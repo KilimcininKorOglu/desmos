@@ -1,12 +1,11 @@
 //! Peer-to-peer NAT traversal.
 //!
-//! Task 37 ships [`crate::net::stun`] for public-address
-//! discovery. Task 38 builds on it with UDP hole punching:
-//! given both peers' STUN-reflected `(ip, port)` pairs and a
-//! shared UDP socket, hole punch until the pair has a
-//! confirmed bidirectional flow.
+//! [`crate::net::stun`] handles public-address discovery. UDP
+//! hole punching builds on it: given both peers' STUN-reflected
+//! `(ip, port)` pairs and a shared UDP socket, hole punch until
+//! the pair has a confirmed bidirectional flow.
 //!
-//! Task 39 adds a relay fallback: when hole punching fails on
+//! A relay fallback is also available: when hole punching fails on
 //! all candidate addresses, the peer registers with one of
 //! the configured `[p2p].relay_servers` and routes traffic
 //! through the relay transparently.

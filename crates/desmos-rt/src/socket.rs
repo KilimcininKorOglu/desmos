@@ -3,7 +3,7 @@
 //! Wraps `socket2::Socket` so the rest of the runtime never has to reach
 //! for platform-specific setsockopts. `bind_on_interface` is Linux-only
 //! for now (via `SO_BINDTODEVICE`); macOS / BSD `IP_BOUND_IF` and
-//! Windows `SIO_SET_INTERFACE` land in Phase 6.
+//! Windows `SIO_SET_INTERFACE` are not yet implemented.
 
 use std::io;
 use std::net::SocketAddr;

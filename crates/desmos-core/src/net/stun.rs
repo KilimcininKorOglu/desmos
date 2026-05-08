@@ -1,6 +1,6 @@
 //! Minimal RFC 5389 STUN Binding client.
 //!
-//! Scope: exactly what the Task 38 UDP hole-punching path
+//! Scope: exactly what the UDP hole-punching path
 //! needs to discover its own public `(ip, port)` reflection
 //! from a public STUN server. Implements:
 //!
@@ -22,7 +22,7 @@
 //! and `MESSAGE-INTEGRITY` attributes (RFC 5389 §15.5 / §15.4),
 //! `USERNAME` / `REALM` authentication (STUN long-term credentials),
 //! `CHANGE-REQUEST` (RFC 3489 legacy), ICE candidate attributes.
-//! Pass 2 / Task 38 can add any of these on top of the primitives
+//! Future work can add any of these on top of the primitives
 //! without re-touching the parser.
 //!
 //! # Wire shape (§6)

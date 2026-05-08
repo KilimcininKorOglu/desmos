@@ -29,7 +29,7 @@
 //!   seconds via a hand-rolled Gregorian date helper.
 //! - `SubjectPublicKeyInfo` algorithm OID plus the
 //!   `subjectPublicKey` BIT STRING content (unused-bits byte
-//!   stripped). Ready to hand to the Task 34 pass 2 verifier
+//!   stripped). Ready to hand to the signature verifier
 //!   directly.
 //! - Outer `signatureAlgorithm` and `signatureValue`.
 //!

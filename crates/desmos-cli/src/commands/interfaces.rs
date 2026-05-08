@@ -26,9 +26,9 @@ impl Command for InterfacesCommand {
     }
 
     fn run(&self, subargs: &[String], globals: &GlobalFlags) -> CliResult {
-        // Task 20 only implements the listing path. Sub-verbs like
-        // `enable` / `disable` / `reweight` land with the bonding
-        // engine in Task 25+.
+        // Only the listing path is implemented. Sub-verbs like
+        // `enable` / `disable` / `reweight` require the bonding
+        // engine and are not yet available.
         if let Some(first) = subargs.first() {
             if first != "list" && !first.starts_with("--") {
                 let w = Writer::from_globals(globals);

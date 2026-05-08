@@ -1,9 +1,8 @@
 //! Multi-client server support.
 //!
-//! Phase 4's first task exposes the pieces the eventual daemon
-//! runner needs to accept concurrent clients on a single UDP
-//! listener: a [`ClientRegistry`] that owns the Task 17
-//! `SessionTable`, a monotonic `SessionId` allocator, and a
+//! Exposes the pieces the daemon runner needs to accept concurrent
+//! clients on a single UDP listener: a [`ClientRegistry`] that owns
+//! the `SessionTable`, a monotonic `SessionId` allocator, and a
 //! [`handshake_responder`](ClientRegistry::accept_client_msg1)
 //! entry point that drives the Noise IK responder side and parks
 //! the resulting `Session<Established>` in the table keyed by its

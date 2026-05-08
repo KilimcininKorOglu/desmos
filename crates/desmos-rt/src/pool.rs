@@ -1,9 +1,9 @@
 //! Thread-safe packet buffer pool.
 //!
-//! Implementation note: Task 8 uses a simple `Mutex<Vec<PacketBuf>>` free
-//! list because every task in Phase 1 is single-threaded and the mutex is
-//! uncontended. Later phases will swap this for an SPSC ring per pipeline
-//! stage (Task 9) once the packet pipeline lands.
+//! Implementation note: uses a simple `Mutex<Vec<PacketBuf>>` free list
+//! because the current pipeline is single-threaded and the mutex is
+//! uncontended. A future optimisation may swap this for an SPSC ring per
+//! pipeline stage once throughput profiling warrants it.
 
 use std::sync::atomic::AtomicU64;
 use std::sync::atomic::Ordering;

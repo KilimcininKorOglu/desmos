@@ -187,7 +187,7 @@ impl ClientRegistry {
     }
 
     /// Remove a client session from the table. Called by the
-    /// keepalive / idle sweeper (Phase 4+) and by explicit
+    /// keepalive / idle sweeper and by explicit
     /// `desmos down` requests.
     pub fn remove_client(&self, id: SessionId) -> Option<Slot> {
         self.table.remove(id)

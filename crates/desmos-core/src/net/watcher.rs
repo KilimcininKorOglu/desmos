@@ -3,7 +3,7 @@
 //! Opens an `AF_NETLINK` socket subscribed to `RTMGRP_LINK`, then
 //! drains `RTM_NEWLINK` / `RTM_DELLINK` events into [`InterfaceEvent`]
 //! values. The watcher exposes a raw fd so it can be registered with
-//! the Task 10 `EpollReactor`, and a non-blocking `next_event` that
+//! the `EpollReactor`, and a non-blocking `next_event` that
 //! the inbound pipeline stage can drain on readiness.
 //!
 //! Hand-declared FFI: we wanted netlink event handling without a
@@ -128,8 +128,7 @@ impl Drop for NetlinkWatcher {
     }
 }
 
-/// Convenience one-shot helper: build a watcher and return it. Matches
-/// the name `watch()` from TASKS.md Task 20 acceptance.
+/// Convenience one-shot helper: build a watcher and return it.
 pub fn watch() -> io::Result<NetlinkWatcher> {
     NetlinkWatcher::new()
 }

@@ -1,6 +1,6 @@
 //! ChaCha20-Poly1305 wrapper. The DWP wire format uses this exact AEAD
 //! for every encrypted packet; nonces are assembled deterministically
-//! from the session id and the sequence number (done in Task 17+).
+//! from the session id and the sequence number.
 
 use ring::aead::Aad;
 use ring::aead::LessSafeKey;

@@ -9,8 +9,8 @@
 //! - **Jitter** — standard deviation of the RTT samples held in the
 //!   same rolling window.
 //!
-//! The stats feed a [`LinkScore`] composite value that Task 25's
-//! weighted and latency-adaptive strategies multiply into their
+//! The stats feed a [`LinkScore`] composite value that the weighted
+//! and latency-adaptive strategies multiply into their
 //! scheduling decisions. Higher composite = better link.
 //!
 //! This module is pure logic: no I/O, no timers, no allocations on
@@ -39,7 +39,7 @@ pub struct LinkScore {
     /// Jitter in microseconds (stdev of the RTT sample window).
     pub jitter_us: u32,
     /// Composite "higher is better" score. The weighted and adaptive
-    /// strategies in Task 25 use this to pick links.
+    /// strategies use this to pick links.
     pub composite: f32,
 }
 
@@ -150,8 +150,8 @@ impl LinkStats {
     /// composite = (1 - loss_rate) · 10_000 / (1 + rtt_ms + jitter_ms · 2)
     /// ```
     ///
-    /// The constants are tunable; the weighted strategy in Task 25
-    /// can read them from config later. A perfectly healthy 1 ms RTT
+    /// The constants are tunable; the weighted strategy can read them
+    /// from config later. A perfectly healthy 1 ms RTT
     /// link with zero loss scores ~5 000; a 100 ms RTT link with 10 %
     /// loss scores ~88.
     pub fn score(&self) -> LinkScore {

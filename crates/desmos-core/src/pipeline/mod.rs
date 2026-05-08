@@ -1,8 +1,8 @@
 //! Single-interface plaintext packet pipeline.
 //!
-//! Phase 1 wires TUN → UDP → TUN with no encryption so we can prove the
-//! syscall plumbing end-to-end. Phase 2 replaces the plaintext path with
-//! Noise IK + ChaCha20-Poly1305. The pipeline stages live in
+//! The plaintext path wires TUN → UDP → TUN with no encryption for
+//! debugging; the encrypted path replaces it with Noise IK +
+//! ChaCha20-Poly1305 for production. The pipeline stages live in
 //! [`outbound`] and [`inbound`]; this module provides the Linux runner
 //! that stitches them together with an [`EpollReactor`].
 
@@ -32,7 +32,7 @@ pub struct PlaintextConfig {
 }
 
 /// Bring up a single TUN, a single UDP socket, and shuttle packets
-/// between them until the process is killed. Linux-only in Phase 1.
+/// between them until the process is killed. Linux-only.
 ///
 /// Requires `CAP_NET_ADMIN` (TUN) and, if `cfg.listen` is on a privileged
 /// port (< 1024) or `SO_BINDTODEVICE` is used, `CAP_NET_RAW`.
@@ -91,7 +91,7 @@ pub fn run_plaintext_linux(cfg: PlaintextConfig) -> std::io::Result<()> {
                         Err(e) if e.kind() == ErrorKind::WouldBlock => break,
                         Err(e) if e.kind() == ErrorKind::InvalidData => {
                             // Drop malformed frames silently in plaintext mode;
-                            // Phase 2 counts them via atomic metrics.
+                            // the encrypted path counts them via atomic metrics.
                             break;
                         }
                         Err(e) => return Err(e),

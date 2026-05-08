@@ -29,7 +29,7 @@
 //! # What this module is NOT
 //!
 //! This module does not know about sockets, session state, or
-//! wire framing. The Task 30 `ClientRegistry` wraps it: on an
+//! wire framing. The `ClientRegistry` wraps it: on an
 //! unseen source it sends a `CookieReply`, then admits the
 //! subsequent msg1 only after `verify_cookie` succeeds.
 

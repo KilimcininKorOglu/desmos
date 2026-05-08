@@ -62,7 +62,7 @@ pub const DEFAULT_PERIOD_SECS: u64 = 30;
 pub const DEFAULT_DIGITS: u8 = 6;
 
 /// Minimum accepted secret length. RFC 4226 §4 requires at least
-/// 128 bits; this library matches the Phase 4 PSK minimum so
+/// 128 bits; this library matches the PSK minimum so
 /// operators do not have to remember two numbers.
 pub const TOTP_MIN_SECRET_LEN: usize = 16;
 

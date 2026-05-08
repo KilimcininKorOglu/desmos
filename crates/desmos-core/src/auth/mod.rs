@@ -2,7 +2,7 @@
 //!
 //! Every auth backend implements the [`Authenticator`] trait:
 //! `name()` for metrics / logging, `authenticate(&ctx)` for the
-//! actual decision. The Phase 4 server daemon picks a backend at
+//! actual decision. The server daemon picks a backend at
 //! config load time (from the `[server.auth]` section) and wraps
 //! it in a `Box<dyn Authenticator>`; the handshake accept path
 //! then calls `authenticate` once per client before installing
@@ -17,9 +17,9 @@
 //! server-side HMAC over session-binding material (PSK, mTLS)
 //! can compute it without re-running the handshake.
 //!
-//! Task 32 ships two backends: [`psk::PresharedKey`] and
-//! [`pubkey::PublicKeyList`]. Task 33 adds TOTP. Task 34 adds
-//! mTLS. Task 35+ wires a configurable dispatcher so
+//! Four backends are available: [`psk::PresharedKey`],
+//! [`pubkey::PublicKeyList`], TOTP, and mTLS. A configurable
+//! dispatcher selects between them so
 //! `[server.auth] method = "psk" | "pubkey" | "totp" | "mtls"`
 //! picks between them.
 
@@ -45,7 +45,7 @@ use desmos_proto::crypto::x25519::PublicKey;
 
 /// Per-client authentication decision context.
 ///
-/// The Phase 4 server handshake accept path builds this for every
+/// The server handshake accept path builds this for every
 /// client that completes msg1 and hands it to the configured
 /// [`Authenticator`] before installing the session in the table.
 pub struct AuthContext<'a> {

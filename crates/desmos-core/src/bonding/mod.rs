@@ -15,8 +15,8 @@
 //! lock, clones the `Arc`, and drops the lock before calling
 //! `schedule`. Writers (strategy hot-swap, link table updates) are
 //! orders of magnitude rarer so `RwLock` rather than a lock-free
-//! `ArcSwap` is fine for Task 21; Task 61 benchmarks can revisit if
-//! the read path ever becomes contended.
+//! `ArcSwap` is fine; benchmarks can revisit if the read path ever
+//! becomes contended.
 
 pub mod failover;
 pub mod link;

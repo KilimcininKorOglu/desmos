@@ -15,7 +15,7 @@
 //!
 //! The client side constructs the same proof for its own
 //! handshake and stuffs it into the control frame the pipeline
-//! eventually wires in (Task 35+). Here we only ship the
+//! eventually wires in. Here we only ship the
 //! verifier; producing the proof is a one-line helper that
 //! tests use directly.
 

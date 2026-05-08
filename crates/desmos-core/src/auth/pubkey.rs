@@ -10,7 +10,7 @@
 //! Two allow-list modes:
 //!
 //! - **Empty list**: every client that completes the Noise
-//!   handshake is accepted. Matches the Task 16 `Responder::new`
+//!   handshake is accepted. Matches the `Responder::new`
 //!   behaviour so the daemon can use a single `PublicKeyList`
 //!   value both as the Noise whitelist and as the post-handshake
 //!   authenticator without worrying about drift.

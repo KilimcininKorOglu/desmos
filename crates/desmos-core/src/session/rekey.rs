@@ -3,7 +3,7 @@
 //! decrypt traffic indefinitely.
 //!
 //! The policy is time-based for now. A packet-count trigger (e.g. after
-//! 2^32 packets) is left for Task 19+ once the wire format settles.
+//! 2^32 packets) may be added once the wire format settles.
 
 /// Hard-coded rekey interval from `IMPLEMENTATION.md §2.3`: 120 seconds.
 /// Sessions older than this must begin a rekey before emitting further

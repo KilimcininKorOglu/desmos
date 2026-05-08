@@ -2,9 +2,9 @@
 //! DWP frame, and send it to the peer over UDP.
 //!
 //! Two variants:
-//! - `forward_tun_to_udp` is the original plaintext path kept from
-//!   Phase 1 so `desmos up --mode plaintext` still works for debugging.
-//! - `forward_tun_to_udp_encrypted` is the Phase 2 path that seals the
+//! - `forward_tun_to_udp` is the original plaintext path kept so
+//!   `desmos up --mode plaintext` still works for debugging.
+//! - `forward_tun_to_udp_encrypted` is the production path that seals the
 //!   payload with a `Session<Established>` from `desmos-core::session`
 //!   and stamps the assigned sequence into the DWP header.
 
@@ -167,7 +167,7 @@ pub fn forward_tun_to_udp_encrypted<T: Tun>(
 /// supplied socket lookup.
 ///
 /// `get_sock(link_id)` returns the `UdpSocket` the pipeline bound on
-/// that link (per Task 13 — `SO_BINDTODEVICE` picks the right egress
+/// that link (`SO_BINDTODEVICE` picks the right egress
 /// path). The caller owns the socket set; this function never
 /// allocates or drops sockets, it only borrows them.
 ///

@@ -1,11 +1,11 @@
 //! Link types for the bonding engine.
 //!
 //! A [`Link`] is one physical path to the peer: an interface name, a
-//! `(peer_addr)` tuple, a static weight, and a health flag. Task 25
-//! replaces the coarse `healthy: bool` with the full link-state
-//! machine (`Healthy / Probation / Degraded / Dead`) from
-//! IMPLEMENTATION.md §2.4; Task 21 keeps the shape simple so the
-//! round-robin strategy has something to schedule against.
+//! `(peer_addr)` tuple, a static weight, and a health flag. The full
+//! link-state machine (`Healthy / Probation / Degraded / Dead`) from
+//! IMPLEMENTATION.md §2.4 lives in [`super::link_state`]; this struct
+//! keeps the shape simple so the round-robin strategy has something to
+//! schedule against.
 //!
 //! [`LinkTable`] is the read-only snapshot the engine passes to every
 //! strategy invocation. It holds `Arc<Link>` so callers can cheaply
@@ -34,7 +34,7 @@ pub struct Link {
     /// Static weight. Ignored by round-robin; read by weighted /
     /// adaptive strategies in later tasks.
     pub weight: u32,
-    /// Coarse health flag. Replaced by the full state machine in Task 25.
+    /// Coarse health flag. See [`super::link_state`] for the full state machine.
     pub healthy: bool,
 }
 

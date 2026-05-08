@@ -1,6 +1,6 @@
 //! Per-link health state machine.
 //!
-//! Replaces the coarse `Link::healthy: bool` flag from Task 21 with
+//! Replaces the coarse `Link::healthy: bool` flag with
 //! the four-state model from `IMPLEMENTATION.md §2.4`:
 //!
 //! ```text
@@ -20,8 +20,8 @@
 //! that goes completely silent and then recovers re-enters at
 //! reduced weight for 10 seconds before it is trusted again.
 //!
-//! The machine is driven by [`ProbeSample`] events, which the Task
-//! 23 probe loop produces from every ack/timeout pair. Consecutive
+//! The machine is driven by [`ProbeSample`] events, which the
+//! probe loop produces from every ack/timeout pair. Consecutive
 //! non-matching samples reset the streak counters so one transient
 //! spike does not flip the state.
 //!
@@ -46,7 +46,7 @@ pub const NO_RESPONSE_STREAK: u8 = 3;
 pub const RECOVERY_STREAK: u8 = 3;
 
 /// Per-probe outcome classification. The probe loop produces these
-/// from the Task 23 `LinkStats` after every measurement cycle: a
+/// from the `LinkStats` after every measurement cycle: a
 /// successful ack + low loss is `Good`, a high-loss probe stream is
 /// `HighLoss`, a probe that never answered is `NoResponse`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

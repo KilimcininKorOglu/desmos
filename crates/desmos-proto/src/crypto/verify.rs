@@ -1,6 +1,6 @@
 //! Digital signature verification wrappers over `ring::signature`.
 //!
-//! Used by the Task 34 X.509 chain verifier in `desmos-core::auth`.
+//! Used by the X.509 chain verifier in `desmos-core::auth`.
 //! Exposes a narrow public surface covering exactly the signature
 //! algorithms the mTLS authenticator has to accept on RFC 5280
 //! compliant certificate chains:

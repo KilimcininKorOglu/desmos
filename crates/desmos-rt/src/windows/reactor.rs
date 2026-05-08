@@ -27,7 +27,7 @@
 //! # Limitations
 //!
 //! - Only `SOCKET` handles (UDP / TCP). TUN handles go through
-//!   `ReadFile` / `WriteFile` overlapped I/O (Task 43).
+//!   `ReadFile` / `WriteFile` overlapped I/O.
 //! - Thread-safety: `IocpReactor` is `!Send` by design — the
 //!   daemon reactor loop runs on one thread, matching the epoll
 //!   and kqueue backends.

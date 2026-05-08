@@ -7,10 +7,10 @@
 //! - [`Weighted`] — stochastic sampling proportional to each link's
 //!   static `weight`, using a per-strategy xorshift RNG.
 //! - [`LatencyAdaptive`] — stochastic sampling with dynamic weights
-//!   derived from the Task 23 `LinkScore::composite` per link,
+//!   derived from `LinkScore::composite` per link,
 //!   recomputed by the caller via [`LatencyAdaptive::update_score`]
 //!   whenever the probe loop publishes fresh numbers.
-//! - [`Replicate`] (Task 26) — returns `LinkSelection::Many`.
+//! - [`Replicate`] — returns `LinkSelection::Many`.
 //!
 //! Every strategy is `Send + Sync` and holds its own small amount of
 //! interior state so the engine can share a single `Arc<dyn
@@ -32,7 +32,7 @@ use super::link::LinkTable;
 use super::score::LinkScore;
 
 /// Per-packet scheduling decision. The round-robin, weighted, and
-/// adaptive strategies return `One`; the redundant strategy (Task 23)
+/// adaptive strategies return `One`; the redundant strategy
 /// returns `Many`; an empty link set maps to `None`.
 #[derive(Debug, Clone)]
 pub enum LinkSelection {

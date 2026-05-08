@@ -12,7 +12,7 @@
 //! real port is not the one STUN saw, so [`HolePunchConfig::peer_alt_ports`]
 //! lets the caller spray probes across a small candidate range
 //! (usually `port ± N`) as a best-effort fallback. A better
-//! fallback is relay (Task 39) which this module deliberately
+//! fallback is relay which this module deliberately
 //! does not try to own.
 //!
 //! # Wire format
@@ -123,8 +123,8 @@ pub struct HolePunchConfig {
 
 impl HolePunchConfig {
     /// Quick constructor for a cone-NAT attempt with no
-    /// symmetric fallback. Matches what the Phase 5 daemon
-    /// runner will use by default.
+    /// symmetric fallback. Matches the default daemon runner
+    /// configuration.
     pub fn cone(peer: SocketAddr, deadline_ms: u64, interval_ms: u64) -> Self {
         Self { peer_primary: peer, peer_alt_ports: Vec::new(), deadline_ms, interval_ms }
     }

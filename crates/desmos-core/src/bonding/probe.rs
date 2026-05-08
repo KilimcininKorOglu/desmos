@@ -18,7 +18,7 @@
 use std::collections::BTreeMap;
 
 /// Default probe cadence: one probe every 500 ms, matching the
-/// `probe_interval_ms` acceptance item in TASKS.md Task 23.
+/// `probe_interval_ms` acceptance criterion.
 pub const DEFAULT_INTERVAL_US: u64 = 500_000;
 
 /// Default probe timeout: a probe that has not been acknowledged

@@ -22,8 +22,8 @@
 //!
 //! For the common 1500 → 1280 case this converges in 1-5 probes,
 //! which at a 500 ms probe cadence is ≤ 2.5 s — well under the
-//! "converges within 3 s per link" acceptance bar from TASKS.md
-//! Task 28. Jumbogram links would need more probes; the comment
+//! "converges within 3 s per link" acceptance bar. Jumbogram links
+//! would need more probes; the comment
 //! on `STEP` documents how to tune it.
 
 /// RFC 8201 §4 minimum path MTU. Every IPv6 path is required to
@@ -173,7 +173,7 @@ impl Pmtud {
     }
 
     /// Reset back to `Probing` at `initial_mtu`. Used when the
-    /// link recovers from `Dead` (see Task 27 failover
+    /// link recovers from `Dead` (see the failover
     /// controller) — the new epoch starts from scratch because
     /// the path might have changed while the link was down.
     pub fn reset(&mut self, initial_mtu: u16) {
