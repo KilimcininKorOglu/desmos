@@ -6,6 +6,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] - 2026-05-08
+
 ### Added
 - WebSocket frame loops for `/api/v1/ws/stats` (2 Hz stats snapshots) and `/api/v1/ws/logs` (live log entries). HTTP server `UpgradeHandler` callback detects 101 responses and switches to WebSocket frame I/O. Stats loop reads from `Broadcast<StatsSnapshot>`, logs loop reads from `Broadcast<Entry>`.
 - Windows encrypted client runner (`run_client_windows`) using Wintun TUN with poll-based loop.

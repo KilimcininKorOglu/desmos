@@ -71,14 +71,14 @@ checksum = "7c74b8349d32d297c9134b8c88677813a227df8f779daa29bfc29c183fe3dca6"
 
 [[package]]
 name = "desmos"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "desmos-cli",
 ]
 
 [[package]]
 name = "desmos-cli"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "desmos-core",
  "desmos-proto",
@@ -86,7 +86,7 @@ dependencies = [
 
 [[package]]
 name = "desmos-core"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "desmos-proto",
  "desmos-rt",
@@ -95,14 +95,14 @@ dependencies = [
 
 [[package]]
 name = "desmos-http"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "ring",
 ]
 
 [[package]]
 name = "desmos-proto"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "blake3",
  "ring",
@@ -110,7 +110,7 @@ dependencies = [
 
 [[package]]
 name = "desmos-rt"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "desmos-proto",
  "socket2",
@@ -119,7 +119,7 @@ dependencies = [
 
 [[package]]
 name = "desmos-webui"
-version = "1.0.0"
+version = "1.1.0"
 dependencies = [
  "desmos-core",
  "desmos-http",
