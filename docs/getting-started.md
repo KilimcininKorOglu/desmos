@@ -16,7 +16,23 @@ flows correctly.
 
 ## 1. Install
 
-### Option A: Download a release binary
+### Option A: Quick install script
+
+**Linux / macOS / FreeBSD** (detects platform, verifies SHA256):
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/KilimcininKorOglu/desmos/main/scripts/install.sh | sh
+```
+
+Pin a version: `DESMOS_VERSION=1.1.0 curl -fsSL ... | sh`
+
+**Windows** (PowerShell as Administrator):
+
+```powershell
+irm https://raw.githubusercontent.com/KilimcininKorOglu/desmos/main/scripts/install.ps1 | iex
+```
+
+### Option B: Manual download
 
 Visit the [Releases](https://github.com/KilimcininKorOglu/desmos/releases)
 page and download the archive for your platform.
@@ -60,7 +76,7 @@ tar xzf desmos-x86_64-unknown-freebsd.tar.gz
 sudo install -m 755 desmos /usr/local/bin/desmos
 ```
 
-### Option B: Build from source
+### Option C: Build from source
 
 ```bash
 git clone https://github.com/KilimcininKorOglu/desmos.git
@@ -76,7 +92,7 @@ rustup target add x86_64-unknown-linux-musl
 cargo build --release --target x86_64-unknown-linux-musl
 ```
 
-### Option C: OpenWrt
+### Option D: OpenWrt
 
 See `packaging/openwrt/` for the IPK Makefile and init scripts. Cross-compile
 with `--no-default-features` to skip the Web UI (OpenWrt devices have no

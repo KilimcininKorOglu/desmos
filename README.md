@@ -64,10 +64,26 @@ Measured on a single core, 1400-byte MTU:
 
 ## Install
 
-### From release
+### Quick install (Linux / macOS / FreeBSD)
 
-Download the latest binary from
-[Releases](https://github.com/KilimcininKorOglu/desmos/releases):
+```bash
+curl -fsSL https://raw.githubusercontent.com/KilimcininKorOglu/desmos/main/scripts/install.sh | sh
+```
+
+Detects platform, downloads the latest release, verifies SHA256, and installs
+to `/usr/local/bin`. Pin a version with `DESMOS_VERSION=1.1.0`.
+
+### Quick install (Windows, PowerShell as Administrator)
+
+```powershell
+irm https://raw.githubusercontent.com/KilimcininKorOglu/desmos/main/scripts/install.ps1 | iex
+```
+
+Downloads the MSI, verifies checksum, installs silently, and fetches `wintun.dll`.
+
+### Manual download
+
+Download from [Releases](https://github.com/KilimcininKorOglu/desmos/releases):
 
 ```bash
 # Linux x86_64
