@@ -217,15 +217,17 @@ fn handle_incoming<T: Tun>(
     if let Some(&session_id) = addr_map.get(&from) {
         let table = registry.table();
         if let Some(slot) = table.get(session_id) {
-            let session = slot.read().unwrap();
-            let payload = &data[HEADER_LEN..];
-            let mut ct = payload.to_vec();
-            match session.decrypt_data(header.sequence, &mut ct) {
-                Ok(plaintext) => {
-                    let _ = tun.send(&plaintext);
-                }
-                Err(_) => {
-                    metrics.record_decrypt_failure();
+            let guard = slot.lock().unwrap();
+            if let crate::session::AnySession::Established(ref session) = *guard {
+                let payload = &data[HEADER_LEN..];
+                let mut ct = payload.to_vec();
+                match session.decrypt_data(header.sequence, &mut ct) {
+                    Ok(plaintext) => {
+                        let _ = tun.send(&plaintext);
+                    }
+                    Err(_) => {
+                        metrics.record_decrypt_failure();
+                    }
                 }
             }
         }
